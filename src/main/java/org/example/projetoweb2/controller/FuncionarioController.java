@@ -3,9 +3,11 @@ package org.example.projetoweb2.controller;
 import org.example.projetoweb2.model.Funcionario;
 import org.example.projetoweb2.model.Departamento;
 import org.example.projetoweb2.repository.FuncionarioRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @Controller
 @RequestMapping("/funcionarios")
@@ -51,7 +53,7 @@ public class FuncionarioController {
      * @return Redireciona a requisição de volta para a rota "/funcionarios"
      */
     @PostMapping("/salvar")
-    public String salvar(@ModelAttribute Funcionario funcionario) {
+    public String salvar(@ModelAttribute Funcionario funcionario) { // anotação gerencia a conversao do texto e criação de novo Funcionario
         if (funcionario.getId() == null) {
             repository.cadastrar(funcionario);
         } else {
@@ -70,9 +72,11 @@ public class FuncionarioController {
     @GetMapping("/editar/{id}")
     public String formularioEditar(@PathVariable Long id, Model model) {
         Funcionario funcionario = repository.buscarPorId(id);
+        
         if (funcionario == null) {
-            funcionario = new Funcionario(); // fallback caso não encontre
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado!");
         }
+        
         model.addAttribute("funcionario", funcionario);
         model.addAttribute("departamentos", Departamento.values());
         return "form";

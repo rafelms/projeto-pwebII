@@ -18,7 +18,7 @@ public class FuncionarioRepository {
 
     // O @PersistenceContext injeta automaticamente o EntityManager do JPA
     @PersistenceContext
-    private EntityManager em;
+    private EntityManager em; //Subistituto do rowMapper
 
     /**
      * Retorna a lista de todos os funcionários.
