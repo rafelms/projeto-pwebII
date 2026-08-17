@@ -1,7 +1,7 @@
 package org.example.projetoweb2.controller;
 
 import org.example.projetoweb2.model.Funcionario;
-import org.example.projetoweb2.repository.FuncionarioRepository;
+import org.example.projetoweb2.dao.FuncionarioDao;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -10,10 +10,10 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/funcionarios")
 public class FuncionarioController {
 
-    private final FuncionarioRepository repository;
+    private final FuncionarioDao funcionarioDao;
 
-    public FuncionarioController(FuncionarioRepository repository) {
-        this.repository = repository;
+    public FuncionarioController(FuncionarioDao funcionarioDao) {
+        this.funcionarioDao = funcionarioDao;
     }
 
     /**
@@ -26,7 +26,7 @@ public class FuncionarioController {
     public String listar(Model model) {
         // Envia a lista de funcionários do banco de dados para a página.
         // No list.html, o Thymeleaf acessará essa lista através da variável ${funcionarios}
-        model.addAttribute("funcionarios", repository.listar());
+        model.addAttribute("funcionarios", funcionarioDao.obterTodosOsFuncionarios());
         return "list";
     }
 
@@ -54,9 +54,9 @@ public class FuncionarioController {
     @PostMapping("/salvar")
     public String salvar(@ModelAttribute Funcionario funcionario) {
         if (funcionario.getId() == null) {
-            repository.cadastrar(funcionario);
+            funcionarioDao.adicionarNovoFuncionario(funcionario);
         } else {
-            repository.editar(funcionario);
+            funcionarioDao.atualizarDadosDoFuncionario(funcionario);
         }
         // O redirecionamento (redirect:) faz com que não tente abrir uma tela chamada 'funcionarios',
         // mas sim que realize uma nova chamada para a rota URL /funcionarios (chamando o método listar).
@@ -74,7 +74,7 @@ public class FuncionarioController {
     public String formularioEditar(@PathVariable Long id, Model model) {
         // Busca o funcionário correspondente ao ID no banco e o envia para a página.
         // O Thymeleaf pegará esses dados e preencherá os inputs (campos) no HTML.
-        model.addAttribute("funcionario", repository.buscarPorId(id));
+        model.addAttribute("funcionario", funcionarioDao.buscarFuncionarioPeloId(id));
         return "form";
     }
 
@@ -87,7 +87,7 @@ public class FuncionarioController {
      */
     @GetMapping("/excluir/{id}")
     public String excluir(@PathVariable Long id) {
-        repository.excluir(id);
+        funcionarioDao.deletarFuncionarioDoBanco(id);
         return "redirect:/funcionarios";
     }
 }
