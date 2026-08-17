@@ -1,57 +1,72 @@
 package org.example.projetoweb2.repository;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.transaction.Transactional;
 import org.example.projetoweb2.model.Funcionario;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 
+/**
+ * Repositório para a entidade Funcionario utilizando EntityManager nativo do JPA.
+ * Ainda não estamos utilizando a interface JpaRepository do Spring Data, 
+ * conforme orientado na aula base para aprendizado.
+ */
 @Repository
 public class FuncionarioRepository {
 
-    private final JdbcTemplate jdbc;
+    // O @PersistenceContext injeta automaticamente o EntityManager do JPA
+    @PersistenceContext
+    private EntityManager em;
 
-    public FuncionarioRepository(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
-    }
-
-    public void cadastrar(Funcionario funcionario) {
-        String sql = "INSERT INTO funcionario (nome, departamento, salario) VALUES (?, ?, ?)";
-        jdbc.update(sql, funcionario.getNome(), funcionario.getDepartamento(), funcionario.getSalario());
-    }
-
+    /**
+     * Retorna a lista de todos os funcionários.
+     * @return Lista de Funcionario
+     */
     public List<Funcionario> listar() {
-        String sql = "SELECT * FROM funcionario";
-        return jdbc.query(sql, new FuncionarioRowMapper());
+        // Utilizamos JPQL (Java Persistence Query Language) em vez de SQL puro.
+        return em.createQuery("from Funcionario", Funcionario.class).getResultList();
     }
 
+    /**
+     * Busca um funcionário específico através de seu ID.
+     * @param id ID numérico do funcionário.
+     * @return Funcionario encontrado ou null.
+     */
     public Funcionario buscarPorId(Long id) {
-        String sql = "SELECT * FROM funcionario WHERE id = ?";
-        return jdbc.queryForObject(sql, new FuncionarioRowMapper(), id);
+        return em.find(Funcionario.class, id);
     }
 
+    /**
+     * Cadastra um novo funcionário no banco de dados.
+     * A anotação @Transactional garante que a transação no banco seja aberta e salva (commit) corretamente.
+     * @param funcionario Objeto Funcionario com os dados.
+     */
+    @Transactional
+    public void cadastrar(Funcionario funcionario) {
+        em.persist(funcionario);
+    }
+
+    /**
+     * Atualiza os dados de um funcionário que já existe.
+     * @param funcionario Objeto Funcionario modificado.
+     */
+    @Transactional
     public void editar(Funcionario funcionario) {
-        String sql = "UPDATE funcionario SET nome = ?, departamento = ?, salario = ? WHERE id = ?";
-        jdbc.update(sql, funcionario.getNome(), funcionario.getDepartamento(), funcionario.getSalario(), funcionario.getId());
+        em.merge(funcionario);
     }
 
+    /**
+     * Remove o funcionário do banco de dados.
+     * É preciso primeiro encontrá-lo (find) para depois removê-lo (remove).
+     * @param id ID numérico do funcionário a ser apagado.
+     */
+    @Transactional
     public void excluir(Long id) {
-        String sql = "DELETE FROM funcionario WHERE id = ?";
-        jdbc.update(sql, id);
-    }
-
-    private static class FuncionarioRowMapper implements RowMapper<Funcionario> {
-        @Override
-        public Funcionario mapRow(ResultSet rs, int rowNum) throws SQLException {
-            Funcionario f = new Funcionario();
-            f.setId(rs.getLong("id"));
-            f.setNome(rs.getString("nome"));
-            f.setDepartamento(rs.getString("departamento"));
-            f.setSalario(rs.getDouble("salario"));
-            return f;
+        Funcionario funcionario = buscarPorId(id);
+        if (funcionario != null) {
+            em.remove(funcionario);
         }
     }
 }

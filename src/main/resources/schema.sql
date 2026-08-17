@@ -1,6 +1,0 @@
-CREATE TABLE IF NOT EXISTS funcionario (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    nome VARCHAR(255) NOT NULL,
-    departamento VARCHAR(255) NOT NULL,
-    salario DOUBLE NOT NULL
-);
