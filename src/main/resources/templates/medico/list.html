@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Médicos</title>
@@ -37,7 +37,7 @@
                 <a th:href="@{/medicos/excluir/{id}(id=${m.id})}" class="btn btn-danger btn-sm"
                    onclick="return confirm('Deseja realmente excluir?')">Excluir</a>
                 <button class="btn btn-info btn-sm" type="button"
-                        th:attr="data-bs-target='#modal-' + ${m.id}"
+                        th:data-bs-target="'#modal-' + ${m.id}"
                         data-bs-toggle="modal">
                     Ver Consultas
                 </button>
@@ -56,10 +56,10 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                     </div>
                     <div class="modal-body">
-                        <div th:if="${m.consultaList == null or m.consultaList.empty}">
+                        <div th:if="${m.consultaList == null or #lists.isEmpty(m.consultaList)}">
                             <p>Nenhuma consulta cadastrada.</p>
                         </div>
-                        <table class="table table-sm" th:unless="${m.consultaList == null or m.consultaList.empty}">
+                        <table class="table table-sm" th:unless="${m.consultaList == null or #lists.isEmpty(m.consultaList)}">
                             <thead>
                             <tr>
                                 <th>Data</th>
