@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Médicos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container mt-4">
+
+    <!-- Barra de navegação simples -->
+    <nav class="mb-3">
+        <a href="/pacientes" class="btn btn-outline-primary btn-sm me-1">Pacientes</a>
+        <a href="/medicos" class="btn btn-outline-primary btn-sm me-1">Médicos</a>
+        <a href="/consultas" class="btn btn-outline-primary btn-sm">Consultas</a>
+    </nav>
+
+    <h2>Lista de Médicos</h2>
+    <a href="/medicos/novo" class="btn btn-success mb-3">Novo Médico</a>
+
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>CRM</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="m : ${medicos}">
+            <td th:text="${m.id}"></td>
+            <td th:text="${m.nome}"></td>
+            <td th:text="${m.crm}"></td>
+            <td>
+                <a th:href="@{/medicos/editar/{id}(id=${m.id})}" class="btn btn-warning btn-sm">Editar</a>
+                <a th:href="@{/medicos/excluir/{id}(id=${m.id})}" class="btn btn-danger btn-sm"
+                   onclick="return confirm('Deseja realmente excluir?')">Excluir</a>
+                <button class="btn btn-info btn-sm" type="button"
+                        th:attr="data-bs-target='#modal-' + ${m.id}"
+                        data-bs-toggle="modal">
+                    Ver Consultas
+                </button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- Modais de consultas por médico -->
+    <div th:each="m : ${medicos}">
+        <div class="modal fade" th:id="'modal-' + ${m.id}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" th:text="'Consultas de ' + ${m.nome}"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div th:if="${m.consultaList == null or m.consultaList.empty}">
+                            <p>Nenhuma consulta cadastrada.</p>
+                        </div>
+                        <table class="table table-sm" th:unless="${m.consultaList == null or m.consultaList.empty}">
+                            <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Paciente</th>
+                                <th>Valor</th>
+                                <th>Observação</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="c : ${m.consultaList}">
+                                <td th:text="${c.dataFormatada}"></td>
+                                <td th:text="${c.paciente != null ? c.paciente.nome : 'N/A'}"></td>
+                                <td th:text="'R$ ' + ${#numbers.formatDecimal(c.valor, 1, 2)}"></td>
+                                <td th:text="${c.observacao}"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
