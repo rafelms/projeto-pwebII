@@ -9,15 +9,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-/**
- * Controller responsável pelas operações CRUD da entidade Paciente.
- * Gerencia as requisições HTTP e direciona para as views Thymeleaf correspondentes.
- */
+
 @Controller
 @RequestMapping("/pacientes")
 public class PacienteController {
 
-    /** Repositório para acesso aos dados de Paciente. */
     private final PacienteRepository repository;
 
     /**

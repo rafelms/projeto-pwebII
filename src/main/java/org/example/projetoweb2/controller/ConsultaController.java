@@ -11,21 +11,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-/**
- * Controller responsável pelas operações CRUD da entidade Consulta.
- * Gerencia as requisições HTTP e direciona para as views Thymeleaf correspondentes.
- */
 @Controller
 @RequestMapping("/consultas")
 public class ConsultaController {
 
-    /** Repositório para acesso aos dados de Consulta. */
     private final ConsultaRepository consultaRepository;
 
-    /** Repositório para acesso aos dados de Paciente (usado no formulário). */
     private final PacienteRepository pacienteRepository;
 
-    /** Repositório para acesso aos dados de Medico (usado no formulário). */
     private final MedicoRepository medicoRepository;
 
     /**

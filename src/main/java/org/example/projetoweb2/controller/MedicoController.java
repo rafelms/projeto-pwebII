@@ -9,15 +9,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-/**
- * Controller responsável pelas operações CRUD da entidade Medico.
- * Gerencia as requisições HTTP e direciona para as views Thymeleaf correspondentes.
- */
+
 @Controller
 @RequestMapping("/medicos")
 public class MedicoController {
 
-    /** Repositório para acesso aos dados de Medico. */
     private final MedicoRepository repository;
 
     /**
