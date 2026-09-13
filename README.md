@@ -29,3 +29,14 @@ Para executar localmente, utilize o comando na raiz do projeto:
 .\mvnw spring-boot:run
 ```
 A aplicação estará disponível em `http://localhost:8080/`.
+
+---
+
+## DB no H2
+
+1. Acesse: 👉 http://localhost:8080/h2-console/
+2. Na tela de login, preencha os dados exatamente assim:                                                                                                                                                                    
+   • JDBC URL: jdbc:h2:mem:clinicadb                                                                                                                                                                                       
+   • User Name: sa                                                                                                                                                                                                         
+   • Password: (deixe em branco)
+3. Clique em Connect            

@@ -23,6 +23,8 @@
         <tr>
             <th>ID</th>
             <th>Nome</th>
+            <th>CPF</th>
+            <th>Email</th>
             <th>Telefone</th>
             <th>Ações</th>
         </tr>
@@ -31,6 +33,8 @@
         <tr th:each="p : ${pacientes}">
             <td th:text="${p.id}"></td>
             <td th:text="${p.nome}"></td>
+            <td th:text="${p.cpf}"></td>
+            <td th:text="${p.email}"></td>
             <td th:text="${p.telefone}"></td>
             <td>
                 <a th:href="@{/pacientes/editar/{id}(id=${p.id})}" class="btn btn-warning btn-sm">Editar</a>

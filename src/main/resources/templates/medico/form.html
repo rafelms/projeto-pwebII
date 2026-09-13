@@ -15,11 +15,29 @@
         <!-- Campo oculto para o id (usado na edição) -->
         <input type="hidden" th:field="*{id}">
 
+        <!-- Campos herdados de PessoaFisica -->
         <div class="mb-3">
             <label for="nome" class="form-label">Nome</label>
             <input type="text" class="form-control" id="nome" th:field="*{nome}" required>
         </div>
 
+        <div class="mb-3">
+            <label for="cpf" class="form-label">CPF</label>
+            <input type="text" class="form-control" id="cpf" th:field="*{cpf}" required>
+        </div>
+
+        <!-- Campos herdados de Pessoa -->
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" th:field="*{email}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="telefone" class="form-label">Telefone</label>
+            <input type="text" class="form-control" id="telefone" th:field="*{telefone}" required>
+        </div>
+
+        <!-- Campo específico do Médico -->
         <div class="mb-3">
             <label for="crm" class="form-label">CRM</label>
             <input type="text" class="form-control" id="crm" th:field="*{crm}" required>

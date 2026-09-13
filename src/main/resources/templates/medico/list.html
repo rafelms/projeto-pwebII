@@ -24,6 +24,9 @@
             <th>ID</th>
             <th>Nome</th>
             <th>CRM</th>
+            <th>CPF</th>
+            <th>Email</th>
+            <th>Telefone</th>
             <th>Ações</th>
         </tr>
         </thead>
@@ -32,6 +35,9 @@
             <td th:text="${m.id}"></td>
             <td th:text="${m.nome}"></td>
             <td th:text="${m.crm}"></td>
+            <td th:text="${m.cpf}"></td>
+            <td th:text="${m.email}"></td>
+            <td th:text="${m.telefone}"></td>
             <td>
                 <a th:href="@{/medicos/editar/{id}(id=${m.id})}" class="btn btn-warning btn-sm">Editar</a>
                 <a th:href="@{/medicos/excluir/{id}(id=${m.id})}" class="btn btn-danger btn-sm"
