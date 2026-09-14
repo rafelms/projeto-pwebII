@@ -64,3 +64,10 @@ INSERT INTO consulta (data, valor, observacao, paciente_id, medico_id) VALUES ('
 INSERT INTO consulta (data, valor, observacao, paciente_id, medico_id) VALUES ('2026-09-02 14:30:00', 200.00, 'Retorno exames', 2, 5);
 INSERT INTO consulta (data, valor, observacao, paciente_id, medico_id) VALUES ('2026-09-03 10:00:00', 180.00, 'Primeira consulta', 3, 6);
 INSERT INTO consulta (data, valor, observacao, paciente_id, medico_id) VALUES ('2026-09-05 11:00:00', 150.00, 'Acompanhamento', 1, 5);
+
+-- =====================================================
+-- Reinicia o contador de IDs da tabela pessoa para evitar
+-- conflito de chave primária ao cadastrar novos registros.
+-- O valor 8 é o próximo após o último ID inserido manualmente (7).
+-- =====================================================
+ALTER TABLE pessoa ALTER COLUMN id RESTART WITH 8;
