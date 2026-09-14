@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Fragment do rodapé com dados de contato da clínica (pessoa jurídica) -->
+<footer th:fragment="rodape" class="mt-5 py-3 border-top text-center text-muted" th:if="${clinica != null}">
+    <small>
+        <strong th:text="${clinica.razaoSocial}">Nome da Clínica</strong>
+        &mdash; CNPJ: <span th:text="${clinica.cnpj}">00.000.000/0000-00</span>
+        &mdash; Email: <span th:text="${clinica.email}">contato@email.com</span>
+        &mdash; Tel: <span th:text="${clinica.telefone}">(00) 0000-0000</span>
+    </small>
+</footer>
+
+</body>
+</html>
