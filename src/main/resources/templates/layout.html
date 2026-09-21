@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<!--
+    layout.html - Template Mestre (Layout Principal)
+
+    Este arquivo é o "esqueleto" de todas as páginas da aplicação.
+    Ele define a estrutura HTML completa que será reutilizada por todas as views,
+    utilizando o Thymeleaf Layout Dialect (layout:decorate / layout:fragment).
+
+    Funcionamento:
+    - Cada página filha (ex: paciente/list.html) declara layout:decorate="~{layout}"
+      no seu <html>, indicando que deseja "decorar" este layout.
+    - A página filha define um bloco layout:fragment="conteudo" com seu conteúdo específico.
+    - O Thymeleaf substitui o layout:fragment="conteudo" deste layout pelo conteúdo da página filha.
+    - Isso evita repetir <head>, navbar, footer e imports de CSS/JS em cada página.
+
+    Estrutura:
+    - <head>: meta tags, título dinâmico, Bootstrap 5 CSS e Bootstrap Icons via CDN
+    - <body>:
+        - Navbar: incluída via th:replace do fragment header.html
+        - Conteúdo: área dinâmica substituída por cada página filha (layout:fragment="conteudo")
+        - Footer: incluído via th:replace do fragment footer.html
+        - Bootstrap 5 JS via CDN
+-->
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8">
+    <!-- Meta viewport para responsividade em dispositivos móveis -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!--
+        layout:title-pattern combina o título da página filha ($CONTENT_TITLE)
+        com o nome da aplicação, resultando em: "Pacientes - Clínica Saúde Total"
+    -->
+    <title layout:title-pattern="$CONTENT_TITLE - Clínica Saúde Total">Clínica Saúde Total</title>
+
+    <!-- Bootstrap 5 CSS via CDN - framework de estilização responsiva -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons - biblioteca de ícones vetoriais para uso na navbar e botões -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+
+    <!--
+        th:replace="~{fragments/header :: navbar}" substitui esta <div>
+        pelo conteúdo do fragment "navbar" definido em fragments/header.html.
+        Isso insere a barra de navegação no topo de todas as páginas.
+    -->
+    <div th:replace="~{fragments/header :: navbar}"></div>
+
+    <!--
+        Área de conteúdo principal.
+        O atributo layout:fragment="conteudo" define o ponto de substituição:
+        cada página filha fornece seu próprio conteúdo para esta área.
+        A classe "container mt-4 mb-5" do Bootstrap centraliza e adiciona margens.
+    -->
+    <main class="container mt-4 mb-5">
+        <div layout:fragment="conteudo">
+            <!-- Conteúdo padrão (placeholder) - será substituído pela página filha -->
+            <p>Conteúdo padrão do layout (será substituído pela página filha).</p>
+        </div>
+    </main>
+
+    <!--
+        th:replace="~{fragments/footer :: rodape}" substitui esta <div>
+        pelo conteúdo do fragment "rodape" definido em fragments/footer.html.
+        Exibe os dados de contato da clínica (PessoaJuridica) no rodapé de todas as páginas.
+    -->
+    <div th:replace="~{fragments/footer :: rodape}"></div>
+
+    <!-- Bootstrap 5 JavaScript via CDN - necessário para componentes interativos (modais, navbar collapse) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

@@ -39,6 +39,16 @@
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
+        <!--
+            Thymeleaf Layout Dialect: permite o padrão "layout decorator".
+            Com ele, definimos um layout mestre (layout.html) e cada página filha
+            "decora" esse layout com layout:decorate, substituindo apenas a área de conteúdo.
+            Isso evita repetição de código HTML (head, navbar, footer) em cada template.
+        -->
+        <dependency>
+            <groupId>nz.net.ultraq.thymeleaf</groupId>
+            <artifactId>thymeleaf-layout-dialect</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa-test</artifactId>
