@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<!--
+    header.html - Fragment da Barra de Navegação (Navbar)
+
+    Contém o fragment "navbar" que é reutilizado pelo layout.html
+    através de th:replace="~{fragments/header :: navbar}".
+
+    Personalização:
+    - Cor de fundo: bg-primary (azul Bootstrap) com texto claro (navbar-dark)
+    - Brand: nome da clínica com ícone de hospital
+    - Links: Pacientes, Médicos e Consultas com ícones do Bootstrap Icons
+    - Responsividade: navbar-expand-lg faz a navbar colapsar em telas menores,
+      exibindo um botão "hambúrguer" (navbar-toggler) para abrir o menu
+-->
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+    th:fragment="navbar" define este bloco como um fragment reutilizável.
+    Ele pode ser referenciado em qualquer template via:
+    th:replace="~{fragments/header :: navbar}" ou th:insert="~{fragments/header :: navbar}"
+
+    Classes Bootstrap utilizadas:
+    - navbar: componente base de navegação do Bootstrap
+    - navbar-expand-lg: colapsa em telas menores que lg (992px)
+    - navbar-dark: texto claro para fundo escuro
+    - bg-primary: fundo azul padrão do Bootstrap
+    - shadow-sm: sombra sutil para dar profundidade
+-->
+<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+    <div class="container">
+        <!-- Brand (logotipo/nome da clínica) com link para a página inicial -->
+        <a class="navbar-brand fw-bold" th:href="@{/pacientes}">
+            <i class="bi bi-hospital"></i> Clínica Saúde Total
+        </a>
+
+        <!-- Botão hambúrguer para telas menores - exibe o menu colapsado -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNav" aria-controls="navbarNav"
+                aria-expanded="false" aria-label="Alternar navegação">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Menu de navegação colapsável - ms-auto alinha os itens à direita -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <!-- Link para a lista de pacientes -->
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/pacientes}">
+                        <i class="bi bi-people"></i> Pacientes
+                    </a>
+                </li>
+                <!-- Link para a lista de médicos -->
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/medicos}">
+                        <i class="bi bi-person-badge"></i> Médicos
+                    </a>
+                </li>
+                <!-- Link para a lista de consultas -->
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/consultas}">
+                        <i class="bi bi-calendar-check"></i> Consultas
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+</body>
+</html>
