@@ -1,59 +1,128 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<!--
+    consulta/form.html - Formulário de Cadastro/Edição de Consulta
+
+    Esta página "decora" o layout.html usando layout:decorate="~{layout}",
+    herdando toda a estrutura (navbar, footer, CSS, JS) e substituindo
+    apenas a área de conteúdo via layout:fragment="conteudo".
+
+    Dados recebidos do ConsultaController:
+    - ${consulta}: objeto Consulta (vazio para nova, preenchido para edição)
+    - ${pacientes}: lista de pacientes para o <select> (dropdown)
+    - ${medicos}: lista de médicos para o <select> (dropdown)
+
+    O título do formulário é dinâmico:
+    - "Nova Consulta" quando consulta.id é null (cadastro)
+    - "Editar Consulta" quando consulta.id tem valor (edição)
+
+    Campos do formulário:
+    - data: LocalDateTime, renderizado como input datetime-local
+    - valor: double, renderizado como input number com step 0.01
+    - observacao: String, renderizado como textarea
+    - paciente.id: selecionado via dropdown com lista de pacientes
+    - medico.id: selecionado via dropdown com lista de médicos
+-->
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<!-- layout:decorate="~{layout}" indica que esta página herda o layout.html -->
 <head>
-    <meta charset="UTF-8">
+    <!-- O título será combinado com o padrão do layout: "Formulário de Consulta - Clínica Saúde Total" -->
     <title>Formulário de Consulta</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-<div class="container mt-4">
 
+<!-- layout:fragment="conteudo" substitui a área de conteúdo do layout mestre -->
+<div layout:fragment="conteudo">
+
+    <!--
+        Título dinâmico: exibe "Editar Consulta" se o objeto tem ID (edição),
+        ou "Nova Consulta" se o ID é null (cadastro novo).
+    -->
     <h2 th:text="${consulta.id != null ? 'Editar Consulta' : 'Nova Consulta'}"></h2>
 
-    <form th:action="@{/consultas/salvar}" th:object="${consulta}" method="post">
+    <!-- Bootstrap grid: centraliza o formulário em 8 de 12 colunas -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Card Bootstrap para dar destaque visual ao formulário -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <!--
+                        th:action="@{/consultas/salvar}" define a URL de destino do POST.
+                        th:object="${consulta}" vincula o formulário ao objeto Consulta do model.
+                    -->
+                    <form th:action="@{/consultas/salvar}" th:object="${consulta}" method="post">
 
-        <!-- Campo oculto para o id (usado na edição) -->
-        <input type="hidden" th:field="*{id}">
+                        <!-- Campo oculto com o ID - essencial para edição (identifica o registro existente) -->
+                        <input type="hidden" th:field="*{id}">
 
-        <div class="mb-3">
-            <label for="data" class="form-label">Data e Hora</label>
-            <input type="datetime-local" class="form-control" id="data" th:field="*{data}" required>
+                        <!-- Campo de data e hora - type datetime-local para input nativo do navegador -->
+                        <div class="mb-3">
+                            <label for="data" class="form-label">Data e Hora</label>
+                            <!-- th:field="*{data}" vincula ao atributo LocalDateTime data da Consulta -->
+                            <input type="datetime-local" class="form-control" id="data" th:field="*{data}" required>
+                        </div>
+
+                        <!-- Campo de valor - type number com step 0.01 para aceitar centavos -->
+                        <div class="mb-3">
+                            <label for="valor" class="form-label">Valor (R$)</label>
+                            <!-- th:field="*{valor}" vincula ao atributo double valor da Consulta -->
+                            <input type="number" step="0.01" class="form-control" id="valor" th:field="*{valor}" required>
+                        </div>
+
+                        <!-- Campo de observação - textarea para textos mais longos -->
+                        <div class="mb-3">
+                            <label for="observacao" class="form-label">Observação</label>
+                            <!-- th:field="*{observacao}" vincula ao atributo String observacao da Consulta -->
+                            <textarea class="form-control" id="observacao" th:field="*{observacao}" rows="3"></textarea>
+                        </div>
+
+                        <!--
+                            Dropdown de seleção de paciente.
+                            th:field="*{paciente.id}" vincula o valor selecionado ao ID do paciente
+                            no objeto Consulta (relação @ManyToOne).
+                            th:each="p : ${pacientes}" popula as opções com todos os pacientes cadastrados.
+                        -->
+                        <div class="mb-3">
+                            <label for="paciente" class="form-label">Paciente</label>
+                            <select class="form-select" id="paciente" th:field="*{paciente.id}" required>
+                                <option value="">Selecione um paciente</option>
+                                <option th:each="p : ${pacientes}" th:value="${p.id}" th:text="${p.nome}"></option>
+                            </select>
+                        </div>
+
+                        <!--
+                            Dropdown de seleção de médico.
+                            th:field="*{medico.id}" vincula o valor selecionado ao ID do médico
+                            no objeto Consulta (relação @ManyToOne).
+                            th:each="m : ${medicos}" popula as opções com todos os médicos cadastrados.
+                        -->
+                        <div class="mb-3">
+                            <label for="medico" class="form-label">Médico</label>
+                            <select class="form-select" id="medico" th:field="*{medico.id}" required>
+                                <option value="">Selecione um médico</option>
+                                <option th:each="m : ${medicos}" th:value="${m.id}" th:text="${m.nome}"></option>
+                            </select>
+                        </div>
+
+                        <!-- Botões de ação com d-flex gap-2 para espaçamento horizontal -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Salvar
+                            </button>
+                            <!-- Link para cancelar e voltar à lista de consultas -->
+                            <a th:href="@{/consultas}" class="btn btn-secondary">
+                                <i class="bi bi-x-lg"></i> Cancelar
+                            </a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
         </div>
-
-        <div class="mb-3">
-            <label for="valor" class="form-label">Valor (R$)</label>
-            <input type="number" step="0.01" class="form-control" id="valor" th:field="*{valor}" required>
-        </div>
-
-        <div class="mb-3">
-            <label for="observacao" class="form-label">Observação</label>
-            <textarea class="form-control" id="observacao" th:field="*{observacao}" rows="3"></textarea>
-        </div>
-
-        <div class="mb-3">
-            <label for="paciente" class="form-label">Paciente</label>
-            <select class="form-select" id="paciente" th:field="*{paciente.id}" required>
-                <option value="">Selecione um paciente</option>
-                <option th:each="p : ${pacientes}" th:value="${p.id}" th:text="${p.nome}"></option>
-            </select>
-        </div>
-
-        <div class="mb-3">
-            <label for="medico" class="form-label">Médico</label>
-            <select class="form-select" id="medico" th:field="*{medico.id}" required>
-                <option value="">Selecione um médico</option>
-                <option th:each="m : ${medicos}" th:value="${m.id}" th:text="${m.nome}"></option>
-            </select>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Salvar</button>
-        <a href="/consultas" class="btn btn-secondary">Cancelar</a>
-
-    </form>
+    </div>
 
 </div>
-
-<div th:insert="~{fragments/footer :: rodape}"></div>
 
 </body>
 </html>
