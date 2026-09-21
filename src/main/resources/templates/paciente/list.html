@@ -1,25 +1,48 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<!--
+    paciente/list.html - Página de Listagem de Pacientes
+
+    Esta página "decora" o layout.html usando layout:decorate="~{layout}",
+    herdando toda a estrutura (navbar, footer, CSS, JS) e substituindo
+    apenas a área de conteúdo via layout:fragment="conteudo".
+
+    Dados recebidos do PacienteController (método listar):
+    - ${pacientes}: lista de objetos Paciente vindos do banco de dados
+
+    Funcionalidades:
+    - Tabela com listagem de todos os pacientes (ID, Nome, CPF, Email, Telefone)
+    - Botão "Novo Paciente" que redireciona para o formulário de cadastro
+    - Botões de ação por registro: Editar, Excluir (com confirmação) e Ver Consultas
+    - Modais Bootstrap para visualizar as consultas de cada paciente
+-->
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<!-- layout:decorate="~{layout}" indica que esta página herda o layout.html -->
 <head>
-    <meta charset="UTF-8">
+    <!-- O título será combinado com o padrão do layout: "Pacientes - Clínica Saúde Total" -->
     <title>Pacientes</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-<div class="container mt-4">
 
-    <!-- Barra de navegação simples -->
-    <nav class="mb-3">
-        <a href="/pacientes" class="btn btn-outline-primary btn-sm me-1">Pacientes</a>
-        <a href="/medicos" class="btn btn-outline-primary btn-sm me-1">Médicos</a>
-        <a href="/consultas" class="btn btn-outline-primary btn-sm">Consultas</a>
-    </nav>
+<!--
+    layout:fragment="conteudo" define o bloco que substituirá a área
+    de conteúdo correspondente no layout.html.
+    Todo o HTML dentro desta div será injetado no layout mestre.
+-->
+<div layout:fragment="conteudo">
 
     <h2>Lista de Pacientes</h2>
-    <a href="/pacientes/novo" class="btn btn-success mb-3">Novo Paciente</a>
 
-    <table class="table table-striped">
-        <thead>
+    <!-- Botão para criar novo paciente - redireciona para /pacientes/novo -->
+    <a th:href="@{/pacientes/novo}" class="btn btn-success mb-3">
+        <i class="bi bi-plus-circle"></i> Novo Paciente
+    </a>
+
+    <!-- Tabela estilizada com Bootstrap: listras alternadas (table-striped) e hover -->
+    <table class="table table-striped table-hover">
+        <!-- Cabeçalho da tabela com fundo azul (table-primary) -->
+        <thead class="table-primary">
         <tr>
             <th>ID</th>
             <th>Nome</th>
@@ -30,39 +53,65 @@
         </tr>
         </thead>
         <tbody>
+        <!--
+            th:each="p : ${pacientes}" itera sobre a lista de pacientes
+            recebida do controller, gerando uma linha <tr> para cada paciente.
+        -->
         <tr th:each="p : ${pacientes}">
+            <!-- th:text exibe o valor do atributo correspondente do objeto Paciente -->
             <td th:text="${p.id}"></td>
             <td th:text="${p.nome}"></td>
             <td th:text="${p.cpf}"></td>
             <td th:text="${p.email}"></td>
             <td th:text="${p.telefone}"></td>
             <td>
-                <a th:href="@{/pacientes/editar/{id}(id=${p.id})}" class="btn btn-warning btn-sm">Editar</a>
+                <!-- Botão Editar - redireciona para /pacientes/editar/{id} -->
+                <a th:href="@{/pacientes/editar/{id}(id=${p.id})}" class="btn btn-warning btn-sm">
+                    <i class="bi bi-pencil"></i> Editar
+                </a>
+                <!-- Botão Excluir - redireciona para /pacientes/excluir/{id} com confirmação JavaScript -->
                 <a th:href="@{/pacientes/excluir/{id}(id=${p.id})}" class="btn btn-danger btn-sm"
-                   onclick="return confirm('Deseja realmente excluir?')">Excluir</a>
+                   onclick="return confirm('Deseja realmente excluir?')">
+                    <i class="bi bi-trash"></i> Excluir
+                </a>
+                <!--
+                    Botão Ver Consultas - abre o modal Bootstrap correspondente ao paciente.
+                    th:data-bs-target gera o seletor do modal dinamicamente: "#modal-1", "#modal-2", etc.
+                -->
                 <button class="btn btn-info btn-sm" type="button"
                         th:data-bs-target="'#modal-' + ${p.id}"
                         data-bs-toggle="modal">
-                    Ver Consultas
+                    <i class="bi bi-eye"></i> Ver Consultas
                 </button>
             </td>
         </tr>
         </tbody>
     </table>
 
-    <!-- Modais de consultas por paciente -->
+    <!--
+        Modais Bootstrap para exibir as consultas de cada paciente.
+        Um modal é gerado para cada paciente usando th:each.
+        O ID do modal é dinâmico (th:id="'modal-' + ${p.id}") para
+        corresponder ao data-bs-target do botão "Ver Consultas".
+    -->
     <div th:each="p : ${pacientes}">
         <div class="modal fade" th:id="'modal-' + ${p.id}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
-                    <div class="modal-header">
+                    <!-- Cabeçalho do modal com fundo azul claro -->
+                    <div class="modal-header bg-info text-white">
                         <h5 class="modal-title" th:text="'Consultas de ' + ${p.nome}"></h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
                     </div>
                     <div class="modal-body">
+                        <!--
+                            th:if verifica se o paciente não possui consultas.
+                            #lists.isEmpty() é uma utility do Thymeleaf para verificar listas vazias.
+                        -->
                         <div th:if="${p.consultaList == null or #lists.isEmpty(p.consultaList)}">
-                            <p>Nenhuma consulta cadastrada.</p>
+                            <p class="text-muted">Nenhuma consulta cadastrada.</p>
                         </div>
+                        <!-- th:unless é o oposto de th:if - exibe a tabela apenas se há consultas -->
                         <table class="table table-sm" th:unless="${p.consultaList == null or #lists.isEmpty(p.consultaList)}">
                             <thead>
                             <tr>
@@ -73,9 +122,13 @@
                             </tr>
                             </thead>
                             <tbody>
+                            <!-- Itera sobre as consultas do paciente -->
                             <tr th:each="c : ${p.consultaList}">
+                                <!-- getDataFormatada() retorna a data no formato dd/MM/yyyy HH:mm -->
                                 <td th:text="${c.dataFormatada}"></td>
+                                <!-- Operador ternário para evitar NullPointerException se médico for null -->
                                 <td th:text="${c.medico != null ? c.medico.nome : 'N/A'}"></td>
+                                <!-- #numbers.formatDecimal formata o valor com 2 casas decimais -->
                                 <td th:text="'R$ ' + ${#numbers.formatDecimal(c.valor, 1, 2)}"></td>
                                 <td th:text="${c.observacao}"></td>
                             </tr>
@@ -92,8 +145,5 @@
 
 </div>
 
-<div th:insert="~{fragments/footer :: rodape}"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
