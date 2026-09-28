@@ -4,14 +4,16 @@
 
     Esta página "decora" o layout.html usando layout:decorate="~{layout}",
     herdando toda a estrutura (navbar, footer, CSS, JS) e substituindo
-    apenas a área de conteúdo via layout:fragment="conteudo".
+    APENAS a área de conteúdo via layout:fragment="conteudo".
+
+    NÃO é necessário incluir header nem footer aqui — o layout já faz isso.
 
     Dados recebidos do ConsultaController (método listar):
     - ${consultas}: lista de objetos Consulta vindos do banco de dados
 
     Funcionalidades:
     - Tabela com listagem de todas as consultas (ID, Data, Paciente, Médico, Valor, Observação)
-    - Botão "Nova Consulta" que redireciona para o formulário de cadastro
+    - Botão "Nova Consulta" para redirecionar ao formulário de cadastro
     - Botões de ação por registro: Editar e Excluir (com confirmação)
     - A data é exibida formatada usando o método getDataFormatada() da entidade Consulta
     - O valor é formatado como moeda brasileira usando #numbers.formatDecimal do Thymeleaf
@@ -21,7 +23,7 @@
       layout:decorate="~{layout}">
 <!-- layout:decorate="~{layout}" indica que esta página herda o layout.html -->
 <head>
-    <!-- O título será combinado com o padrão do layout: "Consultas - Clínica Saúde Total" -->
+    <!-- O título será combinado com o padrão do layout: "Consultas - Sistema Médico" -->
     <title>Consultas</title>
 </head>
 <body>
@@ -31,7 +33,7 @@
 
     <h2>Lista de Consultas</h2>
 
-    <!-- Botão para criar nova consulta - redireciona para /consultas/nova -->
+    <!-- Botão para criar nova consulta — redireciona para /consultas/nova -->
     <a th:href="@{/consultas/nova}" class="btn btn-success mb-3">
         <i class="bi bi-plus-circle"></i> Nova Consulta
     </a>
@@ -66,11 +68,11 @@
             <td th:text="'R$ ' + ${#numbers.formatDecimal(c.valor, 1, 2)}"></td>
             <td th:text="${c.observacao}"></td>
             <td>
-                <!-- Botão Editar - redireciona para /consultas/editar/{id} -->
+                <!-- Botão Editar — redireciona para /consultas/editar/{id} -->
                 <a th:href="@{/consultas/editar/{id}(id=${c.id})}" class="btn btn-warning btn-sm">
                     <i class="bi bi-pencil"></i> Editar
                 </a>
-                <!-- Botão Excluir - redireciona para /consultas/excluir/{id} com confirmação JavaScript -->
+                <!-- Botão Excluir — redireciona para /consultas/excluir/{id} com confirmação JavaScript -->
                 <a th:href="@{/consultas/excluir/{id}(id=${c.id})}" class="btn btn-danger btn-sm"
                    onclick="return confirm('Deseja realmente excluir?')">
                     <i class="bi bi-trash"></i> Excluir

@@ -4,18 +4,16 @@
 
     Esta página "decora" o layout.html usando layout:decorate="~{layout}",
     herdando toda a estrutura (navbar, footer, CSS, JS) e substituindo
-    apenas a área de conteúdo via layout:fragment="conteudo".
+    APENAS a área de conteúdo via layout:fragment="conteudo".
+
+    NÃO é necessário incluir header nem footer aqui — o layout já faz isso.
 
     Dados recebidos do ConsultaController:
     - ${consulta}: objeto Consulta (vazio para nova, preenchido para edição)
     - ${pacientes}: lista de pacientes para o <select> (dropdown)
     - ${medicos}: lista de médicos para o <select> (dropdown)
 
-    O título do formulário é dinâmico:
-    - "Nova Consulta" quando consulta.id é null (cadastro)
-    - "Editar Consulta" quando consulta.id tem valor (edição)
-
-    Campos do formulário:
+    Campos do formulário (conforme entidade Consulta):
     - data: LocalDateTime, renderizado como input datetime-local
     - valor: double, renderizado como input number com step 0.01
     - observacao: String, renderizado como textarea
@@ -27,7 +25,7 @@
       layout:decorate="~{layout}">
 <!-- layout:decorate="~{layout}" indica que esta página herda o layout.html -->
 <head>
-    <!-- O título será combinado com o padrão do layout: "Formulário de Consulta - Clínica Saúde Total" -->
+    <!-- O título será combinado com o padrão do layout: "Formulário de Consulta - Sistema Médico" -->
     <title>Formulário de Consulta</title>
 </head>
 <body>
@@ -53,24 +51,24 @@
                     -->
                     <form th:action="@{/consultas/salvar}" th:object="${consulta}" method="post">
 
-                        <!-- Campo oculto com o ID - essencial para edição (identifica o registro existente) -->
+                        <!-- Campo oculto com o ID — essencial para edição (identifica o registro existente) -->
                         <input type="hidden" th:field="*{id}">
 
-                        <!-- Campo de data e hora - type datetime-local para input nativo do navegador -->
+                        <!-- Campo de data e hora — type datetime-local para input nativo do navegador -->
                         <div class="mb-3">
                             <label for="data" class="form-label">Data e Hora</label>
                             <!-- th:field="*{data}" vincula ao atributo LocalDateTime data da Consulta -->
                             <input type="datetime-local" class="form-control" id="data" th:field="*{data}" required>
                         </div>
 
-                        <!-- Campo de valor - type number com step 0.01 para aceitar centavos -->
+                        <!-- Campo de valor — type number com step 0.01 para aceitar centavos -->
                         <div class="mb-3">
                             <label for="valor" class="form-label">Valor (R$)</label>
                             <!-- th:field="*{valor}" vincula ao atributo double valor da Consulta -->
                             <input type="number" step="0.01" class="form-control" id="valor" th:field="*{valor}" required>
                         </div>
 
-                        <!-- Campo de observação - textarea para textos mais longos -->
+                        <!-- Campo de observação — textarea para textos mais longos -->
                         <div class="mb-3">
                             <label for="observacao" class="form-label">Observação</label>
                             <!-- th:field="*{observacao}" vincula ao atributo String observacao da Consulta -->
