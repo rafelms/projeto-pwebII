@@ -1,42 +1,48 @@
 <!DOCTYPE html>
 <!--
-    footer.html - Fragment do Rodapé
+    footer.html - Fragmento do Rodapé
 
-    Contém o fragment "rodape" que exibe os dados de contato da clínica
-    (PessoaJuridica). É incluído no layout.html via th:replace="~{fragments/footer :: rodape}".
+    Contém o fragment "footer" que é incluído no layout.html
+    via th:replace="~{fragments/footer :: footer}".
+
+    IMPORTANTE: Este fragmento é referenciado APENAS no layout.html (uma única vez).
+    As páginas individuais NÃO precisam incluí-lo — o layout cuida disso.
+    Isso atende à exigência de que o footer, por ser um elemento estático,
+    seja definido uma única vez e reutilizado automaticamente em todas as telas.
 
     A variável ${clinica} é disponibilizada globalmente pelo PessoaJuridicaController
     (anotado com @ControllerAdvice e @ModelAttribute("clinica")), tornando os dados
-    acessíveis em todas as views sem necessidade de adicioná-los manualmente em cada controller.
-
-    O th:if="${clinica != null}" garante que o rodapé só será exibido
-    se houver uma PessoaJuridica cadastrada no banco de dados.
+    acessíveis em todas as views sem necessidade de adicioná-los em cada controller.
 -->
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <body>
 
 <!--
-    th:fragment="rodape" define este bloco como fragment reutilizável.
+    th:fragment="footer" define este bloco como fragment reutilizável.
     Classes Bootstrap:
-    - mt-5: margin-top grande para separar do conteúdo
+    - mt-auto: empurra o footer para o final da tela (Sticky Footer)
     - py-3: padding vertical
     - border-top: linha divisória no topo do rodapé
     - text-center: centraliza o texto
     - text-muted: cor de texto suave (cinza)
-
-    th:if="${clinica != null}" renderiza o footer somente se existir clinica cadastrada.
 -->
-<footer th:fragment="rodape" class="mt-5 py-3 border-top text-center text-muted" th:if="${clinica != null}">
-    <small>
-        <!-- Exibe a razão social da clínica em negrito -->
+<footer th:fragment="footer" class="mt-auto py-3 border-top text-center text-muted">
+    <!--
+        Exibe os dados da clínica (PessoaJuridica) se houver uma cadastrada.
+        th:if="${clinica != null}" renderiza o bloco somente se existir clínica.
+    -->
+    <small th:if="${clinica != null}">
+        <!-- Razão social da clínica em negrito -->
         <strong th:text="${clinica.razaoSocial}">Nome da Clínica</strong>
-        <!-- Exibe o CNPJ da clínica -->
+        <!-- CNPJ da clínica -->
         &mdash; CNPJ: <span th:text="${clinica.cnpj}">00.000.000/0000-00</span>
-        <!-- Exibe o email de contato da clínica -->
+        <!-- Email de contato da clínica -->
         &mdash; Email: <span th:text="${clinica.email}">contato@email.com</span>
-        <!-- Exibe o telefone de contato da clínica -->
+        <!-- Telefone de contato da clínica -->
         &mdash; Tel: <span th:text="${clinica.telefone}">(00) 0000-0000</span>
     </small>
+    <!-- Texto padrão exibido quando não há clínica cadastrada -->
+    <small th:if="${clinica == null}">&copy; 2025 Sistema Médico. Todos os direitos reservados.</small>
 </footer>
 
 </body>
