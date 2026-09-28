@@ -4,14 +4,16 @@
 
     Esta página "decora" o layout.html usando layout:decorate="~{layout}",
     herdando toda a estrutura (navbar, footer, CSS, JS) e substituindo
-    apenas a área de conteúdo via layout:fragment="conteudo".
+    APENAS a área de conteúdo via layout:fragment="conteudo".
+
+    NÃO é necessário incluir header nem footer aqui — o layout já faz isso.
 
     Dados recebidos do PacienteController (método listar):
     - ${pacientes}: lista de objetos Paciente vindos do banco de dados
 
     Funcionalidades:
     - Tabela com listagem de todos os pacientes (ID, Nome, CPF, Email, Telefone)
-    - Botão "Novo Paciente" que redireciona para o formulário de cadastro
+    - Botão "Novo Paciente" para redirecionar ao formulário de cadastro
     - Botões de ação por registro: Editar, Excluir (com confirmação) e Ver Consultas
     - Modais Bootstrap para visualizar as consultas de cada paciente
 -->
@@ -20,7 +22,7 @@
       layout:decorate="~{layout}">
 <!-- layout:decorate="~{layout}" indica que esta página herda o layout.html -->
 <head>
-    <!-- O título será combinado com o padrão do layout: "Pacientes - Clínica Saúde Total" -->
+    <!-- O título será combinado com o padrão do layout: "Pacientes - Sistema Médico" -->
     <title>Pacientes</title>
 </head>
 <body>
@@ -34,7 +36,7 @@
 
     <h2>Lista de Pacientes</h2>
 
-    <!-- Botão para criar novo paciente - redireciona para /pacientes/novo -->
+    <!-- Botão para criar novo paciente — redireciona para /pacientes/novo -->
     <a th:href="@{/pacientes/novo}" class="btn btn-success mb-3">
         <i class="bi bi-plus-circle"></i> Novo Paciente
     </a>
@@ -65,21 +67,21 @@
             <td th:text="${p.email}"></td>
             <td th:text="${p.telefone}"></td>
             <td>
-                <!-- Botão Editar - redireciona para /pacientes/editar/{id} -->
+                <!-- Botão Editar — redireciona para /pacientes/editar/{id} -->
                 <a th:href="@{/pacientes/editar/{id}(id=${p.id})}" class="btn btn-warning btn-sm">
                     <i class="bi bi-pencil"></i> Editar
                 </a>
-                <!-- Botão Excluir - redireciona para /pacientes/excluir/{id} com confirmação JavaScript -->
+                <!-- Botão Excluir — redireciona para /pacientes/excluir/{id} com confirmação JavaScript -->
                 <a th:href="@{/pacientes/excluir/{id}(id=${p.id})}" class="btn btn-danger btn-sm"
                    onclick="return confirm('Deseja realmente excluir?')">
                     <i class="bi bi-trash"></i> Excluir
                 </a>
                 <!--
-                    Botão Ver Consultas - abre o modal Bootstrap correspondente ao paciente.
-                    th:data-bs-target gera o seletor do modal dinamicamente: "#modal-1", "#modal-2", etc.
+                    Botão Ver Consultas — abre o modal Bootstrap correspondente ao paciente.
+                    th:data-bs-target gera o seletor do modal dinamicamente: "#modalPaciente-1", etc.
                 -->
                 <button class="btn btn-info btn-sm" type="button"
-                        th:data-bs-target="'#modal-' + ${p.id}"
+                        th:data-bs-target="'#modalPaciente-' + ${p.id}"
                         data-bs-toggle="modal">
                     <i class="bi bi-eye"></i> Ver Consultas
                 </button>
@@ -91,11 +93,10 @@
     <!--
         Modais Bootstrap para exibir as consultas de cada paciente.
         Um modal é gerado para cada paciente usando th:each.
-        O ID do modal é dinâmico (th:id="'modal-' + ${p.id}") para
-        corresponder ao data-bs-target do botão "Ver Consultas".
+        O ID do modal é dinâmico (th:id) para corresponder ao data-bs-target do botão.
     -->
     <div th:each="p : ${pacientes}">
-        <div class="modal fade" th:id="'modal-' + ${p.id}" tabindex="-1" aria-hidden="true">
+        <div class="modal fade" th:id="'modalPaciente-' + ${p.id}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <!-- Cabeçalho do modal com fundo azul claro -->
@@ -111,7 +112,7 @@
                         <div th:if="${p.consultaList == null or #lists.isEmpty(p.consultaList)}">
                             <p class="text-muted">Nenhuma consulta cadastrada.</p>
                         </div>
-                        <!-- th:unless é o oposto de th:if - exibe a tabela apenas se há consultas -->
+                        <!-- th:unless é o oposto de th:if — exibe a tabela apenas se há consultas -->
                         <table class="table table-sm" th:unless="${p.consultaList == null or #lists.isEmpty(p.consultaList)}">
                             <thead>
                             <tr>

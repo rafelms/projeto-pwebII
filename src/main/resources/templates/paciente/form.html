@@ -4,25 +4,24 @@
 
     Esta página "decora" o layout.html usando layout:decorate="~{layout}",
     herdando toda a estrutura (navbar, footer, CSS, JS) e substituindo
-    apenas a área de conteúdo via layout:fragment="conteudo".
+    APENAS a área de conteúdo via layout:fragment="conteudo".
+
+    NÃO é necessário incluir header nem footer aqui — o layout já faz isso.
 
     Dados recebidos do PacienteController:
     - ${paciente}: objeto Paciente (vazio para novo, preenchido para edição)
 
-    O título do formulário é dinâmico:
-    - "Novo Paciente" quando paciente.id é null (cadastro)
-    - "Editar Paciente" quando paciente.id tem valor (edição)
-
-    Campos do formulário refletem a hierarquia de herança:
+    Campos do formulário (conforme hierarquia de herança):
     - nome, cpf: herdados de PessoaFisica
     - email, telefone: herdados de Pessoa
+    (Paciente não tem campos próprios além dos herdados)
 -->
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout}">
 <!-- layout:decorate="~{layout}" indica que esta página herda o layout.html -->
 <head>
-    <!-- O título será combinado com o padrão do layout: "Formulário de Paciente - Clínica Saúde Total" -->
+    <!-- O título será combinado com o padrão do layout: "Formulário de Paciente - Sistema Médico" -->
     <title>Formulário de Paciente</title>
 </head>
 <body>
@@ -45,36 +44,34 @@
                     <!--
                         th:action="@{/pacientes/salvar}" define a URL de destino do POST.
                         th:object="${paciente}" vincula o formulário ao objeto Paciente do model.
-                        th:field="*{campo}" faz o binding bidirecional entre o input e o atributo do objeto.
+                        th:field="*{campo}" faz o binding bidirecional entre o input e o atributo.
                     -->
                     <form th:action="@{/pacientes/salvar}" th:object="${paciente}" method="post">
 
-                        <!-- Campo oculto com o ID - essencial para edição (identifica o registro existente) -->
+                        <!-- Campo oculto com o ID — essencial para edição (identifica o registro existente) -->
                         <input type="hidden" th:field="*{id}">
 
-                        <!-- Campos herdados de PessoaFisica -->
+                        <!-- Campo nome: herdado de PessoaFisica -->
                         <div class="mb-3">
                             <label for="nome" class="form-label">Nome</label>
-                            <!-- th:field="*{nome}" vincula ao atributo nome de PessoaFisica -->
                             <input type="text" class="form-control" id="nome" th:field="*{nome}" required>
                         </div>
 
+                        <!-- Campo cpf: herdado de PessoaFisica -->
                         <div class="mb-3">
                             <label for="cpf" class="form-label">CPF</label>
-                            <!-- th:field="*{cpf}" vincula ao atributo cpf de PessoaFisica -->
                             <input type="text" class="form-control" id="cpf" th:field="*{cpf}" required>
                         </div>
 
-                        <!-- Campos herdados de Pessoa (superclasse) -->
+                        <!-- Campo email: herdado de Pessoa (superclasse) -->
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
-                            <!-- th:field="*{email}" vincula ao atributo email de Pessoa -->
                             <input type="email" class="form-control" id="email" th:field="*{email}" required>
                         </div>
 
+                        <!-- Campo telefone: herdado de Pessoa (superclasse) -->
                         <div class="mb-3">
                             <label for="telefone" class="form-label">Telefone</label>
-                            <!-- th:field="*{telefone}" vincula ao atributo telefone de Pessoa -->
                             <input type="text" class="form-control" id="telefone" th:field="*{telefone}" required>
                         </div>
 
