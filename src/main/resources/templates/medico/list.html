@@ -4,14 +4,16 @@
 
     Esta página "decora" o layout.html usando layout:decorate="~{layout}",
     herdando toda a estrutura (navbar, footer, CSS, JS) e substituindo
-    apenas a área de conteúdo via layout:fragment="conteudo".
+    APENAS a área de conteúdo via layout:fragment="conteudo".
+
+    NÃO é necessário incluir header nem footer aqui — o layout já faz isso.
 
     Dados recebidos do MedicoController (método listar):
     - ${medicos}: lista de objetos Medico vindos do banco de dados
 
     Funcionalidades:
     - Tabela com listagem de todos os médicos (ID, Nome, CRM, CPF, Email, Telefone)
-    - Botão "Novo Médico" que redireciona para o formulário de cadastro
+    - Botão "Novo Médico" para redirecionar ao formulário de cadastro
     - Botões de ação por registro: Editar, Excluir (com confirmação) e Ver Consultas
     - Modais Bootstrap para visualizar as consultas de cada médico
 -->
@@ -20,7 +22,7 @@
       layout:decorate="~{layout}">
 <!-- layout:decorate="~{layout}" indica que esta página herda o layout.html -->
 <head>
-    <!-- O título será combinado com o padrão do layout: "Médicos - Clínica Saúde Total" -->
+    <!-- O título será combinado com o padrão do layout: "Médicos - Sistema Médico" -->
     <title>Médicos</title>
 </head>
 <body>
@@ -30,7 +32,7 @@
 
     <h2>Lista de Médicos</h2>
 
-    <!-- Botão para criar novo médico - redireciona para /medicos/novo -->
+    <!-- Botão para criar novo médico — redireciona para /medicos/novo -->
     <a th:href="@{/medicos/novo}" class="btn btn-success mb-3">
         <i class="bi bi-plus-circle"></i> Novo Médico
     </a>
@@ -63,21 +65,21 @@
             <td th:text="${m.email}"></td>
             <td th:text="${m.telefone}"></td>
             <td>
-                <!-- Botão Editar - redireciona para /medicos/editar/{id} -->
+                <!-- Botão Editar — redireciona para /medicos/editar/{id} -->
                 <a th:href="@{/medicos/editar/{id}(id=${m.id})}" class="btn btn-warning btn-sm">
                     <i class="bi bi-pencil"></i> Editar
                 </a>
-                <!-- Botão Excluir - redireciona para /medicos/excluir/{id} com confirmação JavaScript -->
+                <!-- Botão Excluir — redireciona para /medicos/excluir/{id} com confirmação JavaScript -->
                 <a th:href="@{/medicos/excluir/{id}(id=${m.id})}" class="btn btn-danger btn-sm"
                    onclick="return confirm('Deseja realmente excluir?')">
                     <i class="bi bi-trash"></i> Excluir
                 </a>
                 <!--
-                    Botão Ver Consultas - abre o modal Bootstrap correspondente ao médico.
-                    th:data-bs-target gera o seletor do modal dinamicamente: "#modal-4", "#modal-5", etc.
+                    Botão Ver Consultas — abre o modal Bootstrap correspondente ao médico.
+                    th:data-bs-target gera o seletor do modal dinamicamente: "#modalMedico-4", etc.
                 -->
                 <button class="btn btn-info btn-sm" type="button"
-                        th:data-bs-target="'#modal-' + ${m.id}"
+                        th:data-bs-target="'#modalMedico-' + ${m.id}"
                         data-bs-toggle="modal">
                     <i class="bi bi-eye"></i> Ver Consultas
                 </button>
@@ -92,12 +94,12 @@
         O ID do modal é dinâmico para corresponder ao data-bs-target do botão.
     -->
     <div th:each="m : ${medicos}">
-        <div class="modal fade" th:id="'modal-' + ${m.id}" tabindex="-1" aria-hidden="true">
+        <div class="modal fade" th:id="'modalMedico-' + ${m.id}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <!-- Cabeçalho do modal com fundo azul claro -->
                     <div class="modal-header bg-info text-white">
-                        <h5 class="modal-title" th:text="'Consultas de ' + ${m.nome}"></h5>
+                        <h5 class="modal-title" th:text="'Consultas de Dr(a). ' + ${m.nome}"></h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
                     </div>
                     <div class="modal-body">
@@ -105,7 +107,7 @@
                         <div th:if="${m.consultaList == null or #lists.isEmpty(m.consultaList)}">
                             <p class="text-muted">Nenhuma consulta cadastrada.</p>
                         </div>
-                        <!-- Tabela de consultas - exibida apenas se há consultas (th:unless) -->
+                        <!-- Tabela de consultas — exibida apenas se há consultas (th:unless) -->
                         <table class="table table-sm" th:unless="${m.consultaList == null or #lists.isEmpty(m.consultaList)}">
                             <thead>
                             <tr>
@@ -118,8 +120,11 @@
                             <tbody>
                             <!-- Itera sobre as consultas do médico -->
                             <tr th:each="c : ${m.consultaList}">
+                                <!-- getDataFormatada() retorna a data no formato dd/MM/yyyy HH:mm -->
                                 <td th:text="${c.dataFormatada}"></td>
+                                <!-- Operador ternário para evitar NullPointerException -->
                                 <td th:text="${c.paciente != null ? c.paciente.nome : 'N/A'}"></td>
+                                <!-- #numbers.formatDecimal formata o valor com 2 casas decimais -->
                                 <td th:text="'R$ ' + ${#numbers.formatDecimal(c.valor, 1, 2)}"></td>
                                 <td th:text="${c.observacao}"></td>
                             </tr>
