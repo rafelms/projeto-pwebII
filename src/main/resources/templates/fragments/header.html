@@ -14,7 +14,14 @@
     - Links: Pacientes, Médicos e Consultas com ícones
     - Responsividade: navbar-expand-lg faz a navbar colapsar em telas menores
 -->
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<!--
+    Integração com o Spring Security (thymeleaf-extras-springsecurity6):
+    - sec:authorize="expressão" só renderiza o elemento se a expressão for verdadeira;
+    - sec:authentication="name" exibe o nome do usuário logado.
+    Ocultar um menu NÃO protege a URL: a proteção real está na SecurityConfiguration.
+-->
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 
 <!--
@@ -60,6 +67,42 @@
                     <a class="nav-link" th:href="@{/consultas}">
                         <i class="bi bi-calendar-check"></i> Consultas
                     </a>
+                </li>
+                <!-- Console do banco H2: visível apenas para o perfil ADMIN -->
+                <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                    <a class="nav-link" th:href="@{/h2-console}" target="_blank">
+                        <i class="bi bi-database"></i> H2
+                    </a>
+                </li>
+
+                <!--
+                    Usuário logado: nome, perfil e botão Sair.
+                    O logout é um formulário POST (e não um link GET) para que o
+                    token CSRF seja enviado; th:action insere esse token automaticamente.
+                -->
+                <li class="nav-item dropdown ms-lg-3" sec:authorize="isAuthenticated()">
+                    <a class="nav-link dropdown-toggle" href="#" role="button"
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle"></i> <span sec:authentication="name">usuário</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <span class="dropdown-item-text small text-muted">
+                                Perfil:
+                                <span sec:authorize="hasRole('ADMIN')" class="badge text-bg-danger">ADMIN</span>
+                                <span sec:authorize="hasRole('RECEPCAO')" class="badge text-bg-success">RECEPÇÃO</span>
+                                <span sec:authorize="hasRole('MEDICO')" class="badge text-bg-info">MÉDICO</span>
+                            </span>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form th:action="@{/logout}" method="post" class="px-3">
+                                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                    <i class="bi bi-box-arrow-right"></i> Sair
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
                 </li>
             </ul>
         </div>

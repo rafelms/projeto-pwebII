@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<!--
+    login.html - Página de Login Personalizada
+
+    Substitui a página de login padrão gerada pelo Spring Security.
+    É exibida pelo LoginController (GET /login) e configurada em
+    SecurityConfiguration com formLogin().loginPage("/login").
+
+    NÃO usa o layout.html (layout:decorate), pois o usuário ainda não está
+    autenticado: a navbar com os menus do sistema não deve aparecer aqui.
+
+    Regras exigidas pelo Spring Security:
+    - o formulário faz POST para /login (processado pelo próprio Spring Security);
+    - os campos DEVEM se chamar "username" e "password";
+    - o checkbox "remember-me" ativa o recurso "lembrar de mim";
+    - th:action insere automaticamente o token CSRF (campo oculto _csrf).
+
+    Parâmetros de URL tratados:
+    - ?error  → usuário ou senha inválidos (redirecionamento do Spring Security);
+    - ?logout → logout realizado com sucesso (logoutSuccessUrl).
+-->
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - Sistema Médico</title>
+
+    <!-- Bootstrap 5 e Bootstrap Icons (mesmas versões do layout.html) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        /* Fundo em degradê com o azul primário do sistema */
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0d6efd 0%, #0a3d91 100%);
+        }
+
+        .login-card {
+            max-width: 420px;
+            border: 0;
+            border-radius: 1rem;
+        }
+
+        /* Círculo com o ícone do sistema no topo do card */
+        .login-icone {
+            width: 72px;
+            height: 72px;
+            margin-top: -36px;
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body class="d-flex align-items-center justify-content-center p-3">
+
+<div class="card login-card shadow-lg w-100">
+    <div class="card-body px-4 pb-4">
+
+        <!-- Cabeçalho: ícone e nome do sistema -->
+        <div class="text-center mb-4">
+            <div class="login-icone bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center shadow">
+                <i class="bi bi-hospital"></i>
+            </div>
+            <h1 class="h4 fw-bold mt-3 mb-1">Sistema Médico</h1>
+            <p class="text-muted small mb-0">Entre com seu usuário e senha</p>
+        </div>
+
+        <!-- ?error: credenciais inválidas -->
+        <div th:if="${param.error}" class="alert alert-danger py-2 small" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> Usuário ou senha inválidos.
+        </div>
+
+        <!-- ?logout: saiu do sistema -->
+        <div th:if="${param.logout}" class="alert alert-success py-2 small" role="alert">
+            <i class="bi bi-check-circle"></i> Você saiu do sistema com sucesso.
+        </div>
+
+        <!--
+            th:action="@{/login}" com method="post": o Spring Security intercepta esta
+            requisição, busca o usuário no UserDetailsService e confere a senha com o BCrypt.
+        -->
+        <form th:action="@{/login}" method="post">
+
+            <div class="mb-3">
+                <label for="username" class="form-label">Usuário</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input type="text" class="form-control" id="username" name="username"
+                           placeholder="Digite seu usuário" autocomplete="username" required autofocus>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">Senha</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                    <input type="password" class="form-control" id="password" name="password"
+                           placeholder="Digite sua senha" autocomplete="current-password" required>
+                    <!-- Botão para mostrar/ocultar a senha -->
+                    <button class="btn btn-outline-secondary" type="button" id="mostrarSenha"
+                            title="Mostrar/ocultar senha" aria-label="Mostrar ou ocultar senha">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- name="remember-me" é o nome esperado pelo rememberMe() do Spring Security -->
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="remember-me" name="remember-me">
+                <label class="form-check-label" for="remember-me">Lembrar de mim</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-box-arrow-in-right"></i> Entrar
+            </button>
+        </form>
+
+        <!--
+            Usuários de demonstração (definidos em memória na SecurityConfiguration).
+            Exibidos apenas para facilitar a correção/apresentação da atividade.
+        -->
+        <details class="mt-4 small text-muted">
+            <summary>Usuários para teste</summary>
+            <table class="table table-sm mt-2 mb-0">
+                <thead>
+                <tr><th>Usuário</th><th>Senha</th><th>Perfil</th></tr>
+                </thead>
+                <tbody>
+                <tr><td>admin</td><td>admin</td><td>ADMIN</td></tr>
+                <tr><td>recepcao</td><td>123</td><td>RECEPCAO</td></tr>
+                <tr><td>medico</td><td>123</td><td>MEDICO</td></tr>
+                </tbody>
+            </table>
+        </details>
+    </div>
+</div>
+
+<script>
+    // Alterna o campo de senha entre "password" e "text"
+    document.getElementById('mostrarSenha').addEventListener('click', function () {
+        const campo = document.getElementById('password');
+        const icone = this.querySelector('i');
+        const visivel = campo.type === 'text';
+        campo.type = visivel ? 'password' : 'text';
+        icone.className = visivel ? 'bi bi-eye' : 'bi bi-eye-slash';
+    });
+</script>
+
+</body>
+</html>

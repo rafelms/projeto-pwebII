@@ -18,6 +18,7 @@
     - Modais Bootstrap para visualizar as consultas de cada paciente
 -->
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout}">
 <!-- layout:decorate="~{layout}" indica que esta página herda o layout.html -->
@@ -37,7 +38,8 @@
     <h2>Lista de Pacientes</h2>
 
     <!-- Botão para criar novo paciente — redireciona para /pacientes/novo -->
-    <a th:href="@{/pacientes/novo}" class="btn btn-success mb-3">
+    <a th:href="@{/pacientes/novo}" class="btn btn-success mb-3"
+       sec:authorize="hasAnyRole('ADMIN', 'RECEPCAO')">
         <i class="bi bi-plus-circle"></i> Novo Paciente
     </a>
 
@@ -85,11 +87,12 @@
             <td th:text="${p.telefone}"></td>
             <td>
                 <!-- Botão Editar — redireciona para /pacientes/editar/{id} -->
-                <a th:href="@{/pacientes/editar/{id}(id=${p.id})}" class="btn btn-warning btn-sm">
+                <a th:href="@{/pacientes/editar/{id}(id=${p.id})}" class="btn btn-warning btn-sm"
+                   sec:authorize="hasAnyRole('ADMIN', 'RECEPCAO')">
                     <i class="bi bi-pencil"></i> Editar
                 </a>
                 <!-- Botão Excluir — redireciona para /pacientes/excluir/{id} com confirmação JavaScript -->
-                <a th:href="@{/pacientes/excluir/{id}(id=${p.id})}" class="btn btn-danger btn-sm"
+                <a th:href="@{/pacientes/excluir/{id}(id=${p.id})}" class="btn btn-danger btn-sm" sec:authorize="hasRole('ADMIN')"
                    onclick="return confirm('Deseja realmente excluir?')">
                     <i class="bi bi-trash"></i> Excluir
                 </a>

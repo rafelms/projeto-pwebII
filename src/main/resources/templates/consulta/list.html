@@ -19,6 +19,7 @@
     - O valor é formatado como moeda brasileira usando #numbers.formatDecimal do Thymeleaf
 -->
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout}">
 <!-- layout:decorate="~{layout}" indica que esta página herda o layout.html -->
@@ -34,7 +35,8 @@
     <h2>Lista de Consultas</h2>
 
     <!-- Botão para criar nova consulta — redireciona para /consultas/nova -->
-    <a th:href="@{/consultas/nova}" class="btn btn-success mb-3">
+    <a th:href="@{/consultas/nova}" class="btn btn-success mb-3"
+       sec:authorize="hasAnyRole('ADMIN', 'RECEPCAO')">
         <i class="bi bi-plus-circle"></i> Nova Consulta
     </a>
 
@@ -117,11 +119,12 @@
             <td th:text="${c.observacao}"></td>
             <td>
                 <!-- Botão Editar — redireciona para /consultas/editar/{id} -->
-                <a th:href="@{/consultas/editar/{id}(id=${c.id})}" class="btn btn-warning btn-sm">
+                <a th:href="@{/consultas/editar/{id}(id=${c.id})}" class="btn btn-warning btn-sm"
+                   sec:authorize="hasAnyRole('ADMIN', 'RECEPCAO')">
                     <i class="bi bi-pencil"></i> Editar
                 </a>
                 <!-- Botão Excluir — redireciona para /consultas/excluir/{id} com confirmação JavaScript -->
-                <a th:href="@{/consultas/excluir/{id}(id=${c.id})}" class="btn btn-danger btn-sm"
+                <a th:href="@{/consultas/excluir/{id}(id=${c.id})}" class="btn btn-danger btn-sm" sec:authorize="hasRole('ADMIN')"
                    onclick="return confirm('Deseja realmente excluir?')">
                     <i class="bi bi-trash"></i> Excluir
                 </a>
