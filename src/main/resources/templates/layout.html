@@ -49,6 +49,20 @@
         garantem que o rodapé fique sempre preso na parte inferior (Sticky Footer).
     -->
     <main class="container mt-4 mb-5 flex-grow-1">
+        <!--
+            Mensagens "flash" enviadas pelos controllers via RedirectAttributes
+            (ex.: "Paciente salvo com sucesso!" ou "Não é possível excluir...").
+            Ficam no layout para aparecerem em qualquer página após o redirect.
+        -->
+        <div th:if="${sucesso}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> <span th:text="${sucesso}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+        <div th:if="${erro}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> <span th:text="${erro}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+
         <div layout:fragment="conteudo">
             <!-- Conteúdo padrão (placeholder) — será substituído pela página filha -->
             <p>Conteúdo padrão do layout (será substituído pela página filha).</p>

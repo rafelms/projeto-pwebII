@@ -1,6 +1,11 @@
 package org.example.projetoweb2.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -12,15 +17,33 @@ public class Consulta {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /**
+     * Data e hora da consulta. O padrão do @DateTimeFormat é o mesmo
+     * enviado pelo input datetime-local do HTML (ex.: 2026-09-01T09:00).
+     */
+    @NotNull(message = "A data e hora da consulta são obrigatórias.")
+    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
     private LocalDateTime data;
 
-    private double valor;
+    /**
+     * Valor da consulta. Usa o wrapper Double (e não o primitivo double)
+     * para que um campo vazio chegue como null e seja barrado pelo @NotNull.
+     */
+    @NotNull(message = "O valor é obrigatório.")
+    @DecimalMin(value = "0.01", message = "O valor deve ser maior que zero.")
+    @DecimalMax(value = "10000.00", message = "O valor não pode ultrapassar R$ {value}.")
+    private Double valor;
 
+    @Size(max = 255, message = "A observação deve ter no máximo {max} caracteres.")
     private String observacao;
 
+    /** Paciente obrigatório (existência verificada no ConsultaController). */
+    @NotNull(message = "Selecione um paciente.")
     @ManyToOne
     private Paciente paciente;
 
+    /** Médico obrigatório (existência verificada no ConsultaController). */
+    @NotNull(message = "Selecione um médico.")
     @ManyToOne
     private Medico medico;
 
@@ -43,11 +66,11 @@ public class Consulta {
         this.data = data;
     }
 
-    public double getValor() {
+    public Double getValor() {
         return valor;
     }
 
-    public void setValor(double valor) {
+    public void setValor(Double valor) {
         this.valor = valor;
     }
 

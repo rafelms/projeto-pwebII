@@ -2,6 +2,9 @@ package org.example.projetoweb2.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 /**
  * Representa uma pessoa jurídica no sistema.
@@ -18,8 +21,15 @@ import jakarta.persistence.PrimaryKeyJoinColumn;
 @PrimaryKeyJoinColumn(name = "id")
 public class PessoaJuridica extends Pessoa {
 
+    /** Razão social obrigatória, entre 3 e 150 caracteres. */
+    @NotBlank(message = "A razão social é obrigatória.")
+    @Size(min = 3, max = 150, message = "A razão social deve ter entre {min} e {max} caracteres.")
     private String razaoSocial;
 
+    /** CNPJ obrigatório no formato 99.999.999/9999-99. */
+    @NotBlank(message = "O CNPJ é obrigatório.")
+    @Pattern(regexp = "\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2}",
+            message = "O CNPJ deve estar no formato 99.999.999/9999-99.")
     private String cnpj;
 
     /**

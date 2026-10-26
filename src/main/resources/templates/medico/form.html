@@ -46,39 +46,62 @@
                         th:object="${medico}" vincula o formulário ao objeto Medico do model.
                         th:field="*{campo}" faz o binding bidirecional entre o input e o atributo do objeto.
                     -->
-                    <form th:action="@{/medicos/salvar}" th:object="${medico}" method="post">
+                    <!--
+                        VALIDAÇÃO (Bean Validation + Thymeleaf):
+                        - novalidate desativa a validação nativa do navegador (required, type=email),
+                          garantindo que as regras sejam aplicadas e exibidas pelo BACK-END.
+                        - th:errorclass="is-invalid" adiciona a classe de erro do Bootstrap
+                          (borda vermelha) somente quando o campo possui erro no BindingResult.
+                        - th:errors="*{campo}" exibe a(s) mensagem(ns) definidas nas anotações.
+                    -->
+                    <form th:action="@{/medicos/salvar}" th:object="${medico}" method="post" novalidate>
+
+                        <!-- Resumo exibido quando o formulário volta do servidor com erros -->
+                        <div th:if="${#fields.hasErrors('*')}" class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle"></i> Corrija os campos destacados abaixo.
+                        </div>
 
                         <!-- Campo oculto com o ID — essencial para edição (identifica o registro existente) -->
                         <input type="hidden" th:field="*{id}">
 
-                        <!-- Campo nome: herdado de PessoaFisica -->
+                        <!-- Campo nome: herdado de PessoaFisica (@NotBlank, @Size) -->
                         <div class="mb-3">
                             <label for="nome" class="form-label">Nome</label>
-                            <input type="text" class="form-control" id="nome" th:field="*{nome}" required>
+                            <input type="text" class="form-control" id="nome" th:field="*{nome}"
+                                   th:errorclass="is-invalid" placeholder="Nome completo">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}"></div>
                         </div>
 
-                        <!-- Campo cpf: herdado de PessoaFisica -->
+                        <!-- Campo cpf: herdado de PessoaFisica (@NotBlank, @Pattern, unicidade no controller) -->
                         <div class="mb-3">
                             <label for="cpf" class="form-label">CPF</label>
-                            <input type="text" class="form-control" id="cpf" th:field="*{cpf}" required>
+                            <input type="text" class="form-control" id="cpf" th:field="*{cpf}"
+                                   th:errorclass="is-invalid" placeholder="999.999.999-99">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('cpf')}" th:errors="*{cpf}"></div>
                         </div>
 
-                        <!-- Campo email: herdado de Pessoa (superclasse) -->
+                        <!-- Campo email: herdado de Pessoa (@NotBlank, @Email, @Size) -->
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" th:field="*{email}" required>
+                            <input type="email" class="form-control" id="email" th:field="*{email}"
+                                   th:errorclass="is-invalid" placeholder="nome@dominio.com">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
                         </div>
 
-                        <!-- Campo telefone: herdado de Pessoa (superclasse) -->
+                        <!-- Campo telefone: herdado de Pessoa (@NotBlank, @Pattern) -->
                         <div class="mb-3">
                             <label for="telefone" class="form-label">Telefone</label>
-                            <input type="text" class="form-control" id="telefone" th:field="*{telefone}" required>
+                            <input type="text" class="form-control" id="telefone" th:field="*{telefone}"
+                                   th:errorclass="is-invalid" placeholder="(99) 99999-9999">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('telefone')}" th:errors="*{telefone}"></div>
                         </div>
 
-                        <!-- Campo crm: atributo exclusivo da classe Medico (não herdado) -->
+                        <!-- Campo crm: exclusivo da classe Medico (@NotBlank, @Pattern, unicidade no controller) -->
                         <div class="mb-3">
                             <label for="crm" class="form-label">CRM</label>
-                            <input type="text" class="form-control" id="crm" th:field="*{crm}" required>
+                            <input type="text" class="form-control" id="crm" th:field="*{crm}"
+                                   th:errorclass="is-invalid" placeholder="CRM-SP 12345">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('crm')}" th:errors="*{crm}"></div>
                         </div>
 
                         <!-- Botões de ação com d-flex gap-2 para espaçamento horizontal -->

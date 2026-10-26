@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Documentação local (não versionar) ###
+RELATORIO-BEAN-VALIDATION.md
+MUDANCAS-FRAGMENTOS.md

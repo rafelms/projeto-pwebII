@@ -3,6 +3,8 @@ package org.example.projetoweb2.model;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrimaryKeyJoinColumn;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +26,13 @@ import java.util.List;
 @PrimaryKeyJoinColumn(name = "id")
 public class Medico extends PessoaFisica {
 
-    /** Registro do médico no Conselho Regional de Medicina. */
+    /**
+     * Registro do médico no Conselho Regional de Medicina.
+     * Obrigatório no formato CRM-UF 999999 (ex.: CRM-SP 12345).
+     */
+    @NotBlank(message = "O CRM é obrigatório.")
+    @Pattern(regexp = "CRM-[A-Z]{2} \\d{4,6}",
+            message = "O CRM deve estar no formato CRM-UF 99999 (ex.: CRM-SP 12345).")
     private String crm;
 
     /** Lista de consultas vinculadas a este médico. */

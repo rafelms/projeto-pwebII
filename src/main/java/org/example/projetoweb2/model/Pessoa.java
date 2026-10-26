@@ -6,6 +6,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 import jakarta.persistence.InheritanceType;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 /**
  * Classe base da hierarquia de herança.
@@ -24,8 +28,16 @@ public abstract class Pessoa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Email obrigatório, em formato válido e com no máximo 100 caracteres. */
+    @NotBlank(message = "O email é obrigatório.")
+    @Email(message = "Informe um email válido (ex.: nome@dominio.com).")
+    @Size(max = 100, message = "O email deve ter no máximo {max} caracteres.")
     private String email;
 
+    /** Telefone obrigatório no formato (99) 9999-9999 ou (99) 99999-9999. */
+    @NotBlank(message = "O telefone é obrigatório.")
+    @Pattern(regexp = "\\(\\d{2}\\) \\d{4,5}-\\d{4}",
+            message = "O telefone deve estar no formato (99) 99999-9999 ou (99) 9999-9999.")
     private String telefone;
 
     /**
