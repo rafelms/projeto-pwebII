@@ -5,24 +5,50 @@ import org.example.projetoweb2.dto.FiltroConsulta;
 import org.example.projetoweb2.model.Consulta;
 import org.example.projetoweb2.model.Medico;
 import org.example.projetoweb2.model.Paciente;
+import org.example.projetoweb2.model.StatusConsulta;
+import org.example.projetoweb2.model.TipoConsulta;
 import org.example.projetoweb2.repository.ConsultaRepository;
 import org.example.projetoweb2.repository.MedicoRepository;
 import org.example.projetoweb2.repository.PacienteRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
+/**
+ * Controller das consultas.
+ *
+ * Rotas (cada operação usa o verbo HTTP correspondente):
+ * - GET    /consultas              lista (com filtro)
+ * - GET    /consultas/nova         formulário de cadastro
+ * - POST   /consultas              cadastra
+ * - GET    /consultas/{id}/editar  formulário de edição
+ * - PUT    /consultas/{id}         altera
+ * - DELETE /consultas/{id}         exclui
+ *
+ * O HTML só envia GET e POST; para PUT e DELETE o Thymeleaf (th:method) adiciona
+ * um campo oculto "_method", que o HiddenHttpMethodFilter do Spring converte no verbo certo.
+ */
 @Controller
 @RequestMapping("/consultas")
 public class ConsultaController {
+
+    /** Horários de atendimento da clínica: das 08:00 às 17:30, de 30 em 30 minutos. */
+    private static final List<LocalTime> HORARIOS = gerarHorarios();
 
     private final ConsultaRepository consultaRepository;
 
@@ -30,13 +56,6 @@ public class ConsultaController {
 
     private final MedicoRepository medicoRepository;
 
-    /**
-     * Construtor com injeção de dependência dos repositórios.
-     *
-     * @param consultaRepository repositório de consultas
-     * @param pacienteRepository repositório de pacientes
-     * @param medicoRepository   repositório de médicos
-     */
     public ConsultaController(ConsultaRepository consultaRepository,
                               PacienteRepository pacienteRepository,
                               MedicoRepository medicoRepository) {
@@ -46,10 +65,7 @@ public class ConsultaController {
     }
 
     /**
-     * Lista as consultas, aplicando os filtros informados (período, paciente,
-     * médico e valor mínimo). O filtro é validado com @Valid, incluindo a
-     * anotação customizada @PeriodoValido; se for inválido, as mensagens são
-     * exibidas no formulário de busca e a lista completa é mostrada.
+     * Lista as consultas, aplicando o filtro se for válido.
      *
      * @param filtro objeto com os parâmetros de busca (query string)
      * @param result resultado da validação do filtro
@@ -61,10 +77,7 @@ public class ConsultaController {
         if (result.hasErrors()) {
             model.addAttribute("consultas", consultaRepository.findAll());
         } else {
-            // dataFim é inclusiva: busca até o início do dia seguinte
-            LocalDateTime inicio = filtro.getDataInicio() != null ? filtro.getDataInicio().atStartOfDay() : null;
-            LocalDateTime fim = filtro.getDataFim() != null ? filtro.getDataFim().plusDays(1).atStartOfDay() : null;
-            model.addAttribute("consultas", consultaRepository.filtrar(inicio, fim,
+            model.addAttribute("consultas", consultaRepository.filtrar(filtro.getDataInicio(), filtro.getDataFim(),
                     filtro.getPacienteId(), filtro.getMedicoId(), filtro.getValorMinimo()));
         }
         carregarListas(model);
@@ -72,29 +85,34 @@ public class ConsultaController {
     }
 
     /**
-     * Exibe o formulário para cadastrar uma nova consulta.
-     * Também carrega as listas de pacientes e médicos para os selects do formulário.
+     * Exibe o formulário de nova consulta.
+     * O parâmetro pacienteId (opcional) vem do botão "Agendar" da lista de pacientes
+     * e deixa o paciente já selecionado.
      *
-     * @param model objeto do Spring MVC para enviar dados à view
+     * @param pacienteId paciente pré-selecionado (opcional)
+     * @param model      objeto do Spring MVC para enviar dados à view
      * @return nome da view do formulário de consulta
      */
     @GetMapping("/nova")
-    public String nova(Model model) {
-        model.addAttribute("consulta", new Consulta());
+    public String nova(@RequestParam(required = false) Long pacienteId, Model model) {
+        Consulta consulta = new Consulta();
+        if (pacienteId != null) {
+            pacienteRepository.findById(pacienteId).ifPresent(consulta::setPaciente);
+        }
+        model.addAttribute("consulta", consulta);
         carregarListas(model);
         return "consulta/form";
     }
 
     /**
      * Exibe o formulário preenchido para editar uma consulta existente.
-     * Se o ID não existir, volta para a listagem com mensagem de erro.
      *
-     * @param id                 identificador da consulta a ser editada
+     * @param id                 identificador da consulta
      * @param model              objeto do Spring MVC para enviar dados à view
      * @param redirectAttributes atributos "flash" que sobrevivem ao redirect
      * @return nome da view do formulário ou redirecionamento para a listagem
      */
-    @GetMapping("/editar/{id}")
+    @GetMapping("/{id}/editar")
     public String editar(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         Consulta consulta = consultaRepository.findById(id).orElse(null);
         if (consulta == null) {
@@ -107,25 +125,50 @@ public class ConsultaController {
     }
 
     /**
-     * Valida e salva uma consulta nova ou atualiza uma existente.
-     *
-     * Além das anotações da entidade (@NotNull, @DecimalMin, @Size...), aplica
-     * regras de negócio que dependem do banco de dados:
-     * - paciente e médico selecionados precisam existir;
-     * - uma nova consulta não pode ser marcada em data/hora passada;
-     * - o médico e o paciente não podem ter outra consulta no mesmo horário.
-     *
-     * @param consulta           objeto consulta recebido do formulário
-     * @param result             resultado da validação
-     * @param model              objeto do Spring MVC (recarrega os selects em caso de erro)
-     * @param redirectAttributes atributos "flash" para a mensagem de sucesso
-     * @return formulário (se houver erros) ou redirecionamento para a listagem
+     * Cadastra uma nova consulta (POST). Toda consulta nova começa como AGENDADA.
      */
-    @PostMapping("/salvar")
-    public String salvar(@Valid @ModelAttribute("consulta") Consulta consulta, BindingResult result,
-                         Model model, RedirectAttributes redirectAttributes) {
+    @PostMapping
+    public String cadastrar(@Valid @ModelAttribute("consulta") Consulta consulta, BindingResult result,
+                            Model model, RedirectAttributes redirectAttributes) {
+        consulta.setId(null);
+        consulta.setStatus(StatusConsulta.AGENDADA);
+        return salvar(consulta, result, model, redirectAttributes);
+    }
+
+    /**
+     * Altera uma consulta existente (PUT). O id vem da URL, e não do formulário.
+     */
+    @PutMapping("/{id}")
+    public String alterar(@PathVariable Long id, @Valid @ModelAttribute("consulta") Consulta consulta,
+                          BindingResult result, Model model, RedirectAttributes redirectAttributes) {
+        consulta.setId(id);
+        return salvar(consulta, result, model, redirectAttributes);
+    }
+
+    /**
+     * Exclui uma consulta (DELETE).
+     *
+     * @param id                 identificador da consulta
+     * @param redirectAttributes atributos "flash" para mensagens de sucesso/erro
+     * @return redirecionamento para a listagem de consultas
+     */
+    @DeleteMapping("/{id}")
+    public String excluir(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        if (!consultaRepository.existsById(id)) {
+            redirectAttributes.addFlashAttribute("erro", "Consulta não encontrada: " + id);
+        } else {
+            consultaRepository.deleteById(id);
+            redirectAttributes.addFlashAttribute("sucesso", "Consulta excluída com sucesso!");
+        }
+        return "redirect:/consultas";
+    }
+
+    /**
+     * Validações comuns ao cadastro e à alteração; se tudo estiver certo, grava a consulta.
+     */
+    private String salvar(Consulta consulta, BindingResult result, Model model, RedirectAttributes redirectAttributes) {
         validarPacienteEMedico(consulta, result);
-        validarDataEHorario(consulta, result);
+        validarAgenda(consulta, result);
 
         if (result.hasErrors()) {
             carregarListas(model);
@@ -138,101 +181,95 @@ public class ConsultaController {
     }
 
     /**
-     * Exclui uma consulta pelo seu identificador.
-     *
-     * @param id                 identificador da consulta a ser excluída
-     * @param redirectAttributes atributos "flash" para mensagens de sucesso/erro
-     * @return redirecionamento para a listagem de consultas
-     */
-    @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        if (!consultaRepository.existsById(id)) {
-            redirectAttributes.addFlashAttribute("erro", "Consulta não encontrada: " + id);
-        } else {
-            consultaRepository.deleteById(id);
-            redirectAttributes.addFlashAttribute("sucesso", "Consulta excluída com sucesso!");
-        }
-        return "redirect:/consultas";
-    }
-
-    /**
-     * Adiciona ao model as listas de pacientes e médicos usadas nos selects.
-     *
-     * @param model objeto do Spring MVC para enviar dados à view
+     * Dados usados pelos selects do formulário e do filtro.
      */
     private void carregarListas(Model model) {
         model.addAttribute("pacientes", pacienteRepository.findAll());
         model.addAttribute("medicos", medicoRepository.findAll());
+        model.addAttribute("horarios", HORARIOS);
+        model.addAttribute("tipos", TipoConsulta.values());
+        model.addAttribute("situacoes", StatusConsulta.values());
     }
 
     /**
-     * Verifica se o paciente e o médico foram selecionados e existem no banco.
-     * Quando existem, substitui o objeto vindo do formulário (que só tem o id)
-     * pela entidade carregada do banco.
-     *
-     * Obs.: como o select usa th:field="*{paciente.id}", o Spring sempre cria
-     * um objeto Paciente, mesmo sem seleção; por isso o @NotNull da entidade
-     * é complementado aqui verificando se o id veio preenchido.
-     *
-     * @param consulta consulta recebida do formulário
-     * @param result   resultado da validação, onde os erros são registrados
+     * Troca o paciente e o médico vindos do formulário (só com o id) pelos objetos do banco.
+     * Se o id não for informado ou não existir, registra o erro no campo correspondente.
      */
     private void validarPacienteEMedico(Consulta consulta, BindingResult result) {
         Long pacienteId = consulta.getPaciente() != null ? consulta.getPaciente().getId() : null;
         Paciente paciente = pacienteId != null ? pacienteRepository.findById(pacienteId).orElse(null) : null;
-        if (paciente == null && !result.hasFieldErrors("paciente")) {
-            result.rejectValue("paciente", "paciente.obrigatorio",
-                    pacienteId == null ? "Selecione um paciente." : "Paciente não encontrado.");
+        if (paciente == null) {
+            result.rejectValue("paciente", "paciente.obrigatorio", "Selecione um paciente.");
         }
         consulta.setPaciente(paciente);
 
         Long medicoId = consulta.getMedico() != null ? consulta.getMedico().getId() : null;
         Medico medico = medicoId != null ? medicoRepository.findById(medicoId).orElse(null) : null;
-        if (medico == null && !result.hasFieldErrors("medico")) {
-            result.rejectValue("medico", "medico.obrigatorio",
-                    medicoId == null ? "Selecione um médico." : "Médico não encontrado.");
+        if (medico == null) {
+            result.rejectValue("medico", "medico.obrigatorio", "Selecione um médico.");
         }
         consulta.setMedico(medico);
     }
 
     /**
-     * Regras de data/horário:
-     * - consulta NOVA não pode ser marcada no passado (consultas antigas
-     *   continuam podendo ser editadas, por isso a regra não fica na entidade);
-     * - médico e paciente não podem ter duas consultas no mesmo horário.
-     *
-     * @param consulta consulta recebida do formulário
-     * @param result   resultado da validação, onde os erros são registrados
+     * Regras de agenda:
+     * - a clínica atende de segunda a sexta, nos horários da lista;
+     * - consulta agendada/confirmada precisa estar no futuro;
+     * - consulta realizada (ou falta) só depois do horário — assim uma consulta
+     *   que já passou não volta a ficar "agendada";
+     * - o médico e o paciente não podem ter duas consultas no mesmo horário
+     *   (consultas canceladas não ocupam o horário).
      */
-    private void validarDataEHorario(Consulta consulta, BindingResult result) {
-        if (result.hasFieldErrors("data")) {
-            return;
-        }
-        boolean nova = consulta.getId() == null;
-
-        if (nova && consulta.getData().isBefore(LocalDateTime.now())) {
-            result.rejectValue("data", "data.passada", "Uma nova consulta não pode ser marcada em data/hora passada.");
+    private void validarAgenda(Consulta consulta, BindingResult result) {
+        if (result.hasFieldErrors("data") || result.hasFieldErrors("horario") || result.hasFieldErrors("status")) {
             return;
         }
 
-        if (consulta.getMedico() != null) {
-            boolean ocupado = nova
-                    ? consultaRepository.existsByMedicoIdAndData(consulta.getMedico().getId(), consulta.getData())
-                    : consultaRepository.existsByMedicoIdAndDataAndIdNot(
-                            consulta.getMedico().getId(), consulta.getData(), consulta.getId());
-            if (ocupado) {
-                result.rejectValue("data", "data.medicoOcupado", "O médico já possui uma consulta neste horário.");
-            }
+        DayOfWeek dia = consulta.getData().getDayOfWeek();
+        if (dia == DayOfWeek.SATURDAY || dia == DayOfWeek.SUNDAY) {
+            result.rejectValue("data", "data.fimDeSemana", "A clínica atende de segunda a sexta-feira.");
+            return;
+        }
+        if (!HORARIOS.contains(consulta.getHorario())) {
+            result.rejectValue("horario", "horario.invalido", "Escolha um dos horários da lista.");
+            return;
         }
 
-        if (consulta.getPaciente() != null) {
-            boolean ocupado = nova
-                    ? consultaRepository.existsByPacienteIdAndData(consulta.getPaciente().getId(), consulta.getData())
-                    : consultaRepository.existsByPacienteIdAndDataAndIdNot(
-                            consulta.getPaciente().getId(), consulta.getData(), consulta.getId());
-            if (ocupado) {
-                result.rejectValue("data", "data.pacienteOcupado", "O paciente já possui uma consulta neste horário.");
-            }
+        boolean noFuturo = LocalDateTime.of(consulta.getData(), consulta.getHorario()).isAfter(LocalDateTime.now());
+        StatusConsulta status = consulta.getStatus();
+
+        if (status.isEmAberto() && !noFuturo) {
+            result.rejectValue("data", "data.passada",
+                    "Uma consulta " + status.getDescricao().toLowerCase() + " precisa estar em data e horário futuros.");
+            return;
         }
+        if (status.isEncerrada() && noFuturo) {
+            result.rejectValue("status", "status.futuro",
+                    "Só é possível marcar \"" + status.getDescricao() + "\" depois do horário da consulta.");
+            return;
+        }
+
+        if (status == StatusConsulta.CANCELADA) {
+            return;
+        }
+        if (consulta.getMedico() != null && consultaRepository.medicoOcupado(
+                consulta.getMedico().getId(), consulta.getData(), consulta.getHorario(), consulta.getId())) {
+            result.rejectValue("horario", "horario.medicoOcupado", "O médico já possui uma consulta neste horário.");
+        }
+        if (consulta.getPaciente() != null && consultaRepository.pacienteOcupado(
+                consulta.getPaciente().getId(), consulta.getData(), consulta.getHorario(), consulta.getId())) {
+            result.rejectValue("horario", "horario.pacienteOcupado", "O paciente já possui uma consulta neste horário.");
+        }
+    }
+
+    /**
+     * Gera a lista de horários: 08:00, 08:30, ..., 17:30.
+     */
+    private static List<LocalTime> gerarHorarios() {
+        List<LocalTime> horarios = new ArrayList<>();
+        for (LocalTime h = LocalTime.of(8, 0); h.isBefore(LocalTime.of(18, 0)); h = h.plusMinutes(30)) {
+            horarios.add(h);
+        }
+        return horarios;
     }
 }

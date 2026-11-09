@@ -34,17 +34,17 @@ INSERT INTO paciente (id) VALUES (3);
 -- Medico 1: Dra. Ana Costa
 INSERT INTO pessoa (id, email, telefone) VALUES (4, 'ana.costa@clinica.com', '(11) 91111-4444');
 INSERT INTO pessoa_fisica (id, nome, cpf) VALUES (4, 'Dra. Ana Costa', '333.444.555-66');
-INSERT INTO medico (id, crm) VALUES (4, 'CRM-SP 12345');
+INSERT INTO medico (id, crm, especialidade, valor_consulta) VALUES (4, 'CRM-SP 12345', 'Cardiologia', 250.00);
 
 -- Medico 2: Dr. Pedro Lima
 INSERT INTO pessoa (id, email, telefone) VALUES (5, 'pedro.lima@clinica.com', '(21) 92222-5555');
 INSERT INTO pessoa_fisica (id, nome, cpf) VALUES (5, 'Dr. Pedro Lima', '777.888.999-00');
-INSERT INTO medico (id, crm) VALUES (5, 'CRM-RJ 67890');
+INSERT INTO medico (id, crm, especialidade, valor_consulta) VALUES (5, 'CRM-RJ 67890', 'Clínica Geral', 150.00);
 
 -- Medico 3: Dra. Fernanda Souza
 INSERT INTO pessoa (id, email, telefone) VALUES (6, 'fernanda.souza@clinica.com', '(31) 93333-6666');
 INSERT INTO pessoa_fisica (id, nome, cpf) VALUES (6, 'Dra. Fernanda Souza', '123.456.789-01');
-INSERT INTO medico (id, crm) VALUES (6, 'CRM-MG 11223');
+INSERT INTO medico (id, crm, especialidade, valor_consulta) VALUES (6, 'CRM-MG 11223', 'Dermatologia', 200.00);
 
 -- =====================================================
 -- Pessoa Jurídica (para demonstrar que a herança funciona
@@ -60,10 +60,15 @@ INSERT INTO pessoa_juridica (id, razao_social, cnpj) VALUES (7, 'Clínica Saúde
 -- Nota: os IDs dos pacientes são 1, 2 e 3.
 --       os IDs dos médicos são 4, 5 e 6.
 
-INSERT INTO consulta (data, valor, observacao, paciente_id, medico_id) VALUES ('2026-09-01 09:00:00', 150.00, 'Consulta de rotina', 1, 4);
-INSERT INTO consulta (data, valor, observacao, paciente_id, medico_id) VALUES ('2026-09-02 14:30:00', 200.00, 'Retorno exames', 2, 5);
-INSERT INTO consulta (data, valor, observacao, paciente_id, medico_id) VALUES ('2026-09-03 10:00:00', 180.00, 'Primeira consulta', 3, 6);
-INSERT INTO consulta (data, valor, observacao, paciente_id, medico_id) VALUES ('2026-09-05 11:00:00', 150.00, 'Acompanhamento', 1, 5);
+-- Consultas passadas (já realizadas) e futuras (agendadas/confirmadas).
+-- Datas em dias úteis e horários da lista da clínica (de 30 em 30 minutos).
+INSERT INTO consulta (data, horario, valor, tipo, status, observacao, paciente_id, medico_id) VALUES ('2026-09-01', '09:00', 250.00, 'PRIMEIRA_CONSULTA', 'REALIZADA', 'Consulta de rotina', 1, 4);
+INSERT INTO consulta (data, horario, valor, tipo, status, observacao, paciente_id, medico_id) VALUES ('2026-09-02', '14:30', 150.00, 'PRIMEIRA_CONSULTA', 'REALIZADA', 'Retorno exames', 2, 5);
+INSERT INTO consulta (data, horario, valor, tipo, status, observacao, paciente_id, medico_id) VALUES ('2026-09-03', '10:00', 200.00, 'PRIMEIRA_CONSULTA', 'FALTOU', 'Primeira consulta', 3, 6);
+INSERT INTO consulta (data, horario, valor, tipo, status, observacao, paciente_id, medico_id) VALUES ('2026-09-04', '11:00', 150.00, 'PRIMEIRA_CONSULTA', 'REALIZADA', 'Acompanhamento', 1, 5);
+INSERT INTO consulta (data, horario, valor, tipo, status, observacao, paciente_id, medico_id) VALUES ('2026-11-16', '09:00', 250.00, 'RETORNO', 'CONFIRMADA', 'Retorno com exames do coração', 1, 4);
+INSERT INTO consulta (data, horario, valor, tipo, status, observacao, paciente_id, medico_id) VALUES ('2026-11-18', '14:30', 150.00, 'RETORNO', 'AGENDADA', NULL, 2, 5);
+INSERT INTO consulta (data, horario, valor, tipo, status, observacao, paciente_id, medico_id) VALUES ('2026-12-01', '10:00', 200.00, 'RETORNO', 'AGENDADA', 'Reavaliar tratamento', 3, 6);
 
 -- =====================================================
 -- Reinicia o contador de IDs da tabela pessoa para evitar

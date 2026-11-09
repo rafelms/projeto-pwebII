@@ -1,15 +1,31 @@
 package org.example.projetoweb2.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
+/**
+ * Consulta de um paciente com um médico.
+ *
+ * Data e horário ficam separados: a data vem de um input date e o horário
+ * de uma lista de horários fixos (de 30 em 30 minutos), o que permite
+ * verificar conflito de agenda comparando exatamente o mesmo horário.
+ *
+ * Paciente e médico são verificados no ConsultaController (existência no banco).
+ */
 @Entity
 public class Consulta {
 
@@ -17,33 +33,38 @@ public class Consulta {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * Data e hora da consulta. O padrão do @DateTimeFormat é o mesmo
-     * enviado pelo input datetime-local do HTML (ex.: 2026-09-01T09:00).
-     */
-    @NotNull(message = "A data e hora da consulta são obrigatórias.")
-    @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm")
-    private LocalDateTime data;
+    /** Dia da consulta, no formato do input date do HTML (ex.: 2026-11-20). */
+    @NotNull(message = "A data da consulta é obrigatória.")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+    private LocalDate data;
 
-    /**
-     * Valor da consulta. Usa o wrapper Double (e não o primitivo double)
-     * para que um campo vazio chegue como null e seja barrado pelo @NotNull.
-     */
+    /** Horário da consulta (ex.: 09:30), escolhido na lista de horários da clínica. */
+    @NotNull(message = "Selecione um horário.")
+    @DateTimeFormat(pattern = "HH:mm")
+    private LocalTime horario;
+
+    /** BigDecimal é o tipo adequado para dinheiro (não tem erro de arredondamento como o Double). */
     @NotNull(message = "O valor é obrigatório.")
     @DecimalMin(value = "0.01", message = "O valor deve ser maior que zero.")
     @DecimalMax(value = "10000.00", message = "O valor não pode ultrapassar R$ {value}.")
-    private Double valor;
+    private BigDecimal valor;
+
+    /** @Enumerated(STRING) grava o nome ("RETORNO") no banco, e não a posição (0, 1...). */
+    @NotNull(message = "Selecione o tipo da consulta.")
+    @Enumerated(EnumType.STRING)
+    private TipoConsulta tipo;
+
+    /** Toda consulta nova começa como AGENDADA. */
+    @NotNull(message = "Selecione a situação da consulta.")
+    @Enumerated(EnumType.STRING)
+    private StatusConsulta status = StatusConsulta.AGENDADA;
 
     @Size(max = 255, message = "A observação deve ter no máximo {max} caracteres.")
     private String observacao;
 
-    /** Paciente obrigatório (existência verificada no ConsultaController). */
-    @NotNull(message = "Selecione um paciente.")
     @ManyToOne
     private Paciente paciente;
 
-    /** Médico obrigatório (existência verificada no ConsultaController). */
-    @NotNull(message = "Selecione um médico.")
     @ManyToOne
     private Medico medico;
 
@@ -58,20 +79,44 @@ public class Consulta {
         this.id = id;
     }
 
-    public LocalDateTime getData() {
+    public LocalDate getData() {
         return data;
     }
 
-    public void setData(LocalDateTime data) {
+    public void setData(LocalDate data) {
         this.data = data;
     }
 
-    public Double getValor() {
+    public LocalTime getHorario() {
+        return horario;
+    }
+
+    public void setHorario(LocalTime horario) {
+        this.horario = horario;
+    }
+
+    public BigDecimal getValor() {
         return valor;
     }
 
-    public void setValor(Double valor) {
+    public void setValor(BigDecimal valor) {
         this.valor = valor;
+    }
+
+    public TipoConsulta getTipo() {
+        return tipo;
+    }
+
+    public void setTipo(TipoConsulta tipo) {
+        this.tipo = tipo;
+    }
+
+    public StatusConsulta getStatus() {
+        return status;
+    }
+
+    public void setStatus(StatusConsulta status) {
+        this.status = status;
     }
 
     public String getObservacao() {
@@ -96,33 +141,5 @@ public class Consulta {
 
     public void setMedico(Medico medico) {
         this.medico = medico;
-    }
-
-    /**
-     * Retorna a data formatada no padrão brasileiro (dd/MM/yyyy HH:mm).
-     * Utilizado nas views para exibir a data de forma legível.
-     *
-     * @return string com a data formatada, ou vazio se a data for nula
-     */
-    public String getDataFormatada() {
-        if (data == null) return "";
-        return data.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
-    }
-
-    /**
-     * Retorna uma string formatada com os dados da consulta,
-     * incluindo data, valor, paciente e médico.
-     *
-     * @return string com os dados da consulta
-     */
-    public String dados() {
-        String nomePaciente = (paciente != null) ? paciente.getNome() : "N/A";
-        String nomeMedico = (medico != null) ? medico.getNome() : "N/A";
-        return "Consulta [ID=" + id
-                + ", Data=" + getDataFormatada()
-                + ", Valor=R$" + String.format("%.2f", valor)
-                + ", Paciente=" + nomePaciente
-                + ", Medico=" + nomeMedico
-                + ", Obs=" + observacao + "]";
     }
 }

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Positive;
 import org.example.projetoweb2.validation.PeriodoValido;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 /**
@@ -36,7 +37,7 @@ public class FiltroConsulta {
 
     /** Valor mínimo da consulta (opcional). */
     @DecimalMin(value = "0.00", message = "O valor mínimo não pode ser negativo.")
-    private Double valorMinimo;
+    private BigDecimal valorMinimo;
 
     public LocalDate getDataInicio() {
         return dataInicio;
@@ -70,11 +71,11 @@ public class FiltroConsulta {
         this.medicoId = medicoId;
     }
 
-    public Double getValorMinimo() {
+    public BigDecimal getValorMinimo() {
         return valorMinimo;
     }
 
-    public void setValorMinimo(Double valorMinimo) {
+    public void setValorMinimo(BigDecimal valorMinimo) {
         this.valorMinimo = valorMinimo;
     }
 }

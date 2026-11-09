@@ -10,13 +10,13 @@
 
     Dados recebidos do ConsultaController (método listar):
     - ${consultas}: lista de objetos Consulta vindos do banco de dados
+    - ${pacientes}, ${medicos}: listas para os selects do filtro
 
     Funcionalidades:
-    - Tabela com listagem de todas as consultas (ID, Data, Paciente, Médico, Valor, Observação)
-    - Botão "Nova Consulta" para redirecionar ao formulário de cadastro
-    - Botões de ação por registro: Editar e Excluir (com confirmação)
-    - A data é exibida formatada usando o método getDataFormatada() da entidade Consulta
-    - O valor é formatado como moeda brasileira usando #numbers.formatDecimal do Thymeleaf
+    - Filtro por período, paciente, médico e valor mínimo
+    - Tabela com data, horário, paciente, médico, tipo, situação e valor
+    - Ações: Ver (abre um modal com todos os dados), Editar e Excluir (DELETE)
+    - #temporals.format formata a data (LocalDate) no padrão brasileiro
 -->
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
@@ -24,7 +24,6 @@
       layout:decorate="~{layout}">
 <!-- layout:decorate="~{layout}" indica que esta página herda o layout.html -->
 <head>
-    <!-- O título será combinado com o padrão do layout: "Consultas - Sistema Médico" -->
     <title>Consultas</title>
 </head>
 <body>
@@ -34,7 +33,7 @@
 
     <h2>Lista de Consultas</h2>
 
-    <!-- Botão para criar nova consulta — redireciona para /consultas/nova -->
+    <!-- Botão para criar nova consulta — abre o formulário (GET /consultas/nova) -->
     <a th:href="@{/consultas/nova}" class="btn btn-success mb-3"
        sec:authorize="hasAnyRole('ADMIN', 'RECEPCAO')">
         <i class="bi bi-plus-circle"></i> Nova Consulta
@@ -44,7 +43,6 @@
         Filtro de consultas (GET /consultas?dataInicio=...&dataFim=...).
         th:object="${filtro}" liga o formulário ao FiltroConsulta, validado com @Valid
         no controller (inclui a anotação customizada @PeriodoValido).
-        th:errors exibe as mensagens abaixo de cada campo inválido.
     -->
     <div class="card shadow-sm mb-3">
         <div class="card-body">
@@ -88,50 +86,124 @@
         </div>
     </div>
 
-    <!-- Tabela estilizada com Bootstrap: listras alternadas (table-striped) e hover -->
-    <table class="table table-striped table-hover">
-        <!-- Cabeçalho da tabela com fundo azul (table-primary) -->
+    <table class="table table-striped table-hover align-middle">
         <thead class="table-primary">
         <tr>
-            <th>ID</th>
             <th>Data</th>
+            <th>Horário</th>
             <th>Paciente</th>
             <th>Médico</th>
+            <th>Tipo</th>
+            <th>Situação</th>
             <th>Valor</th>
-            <th>Observação</th>
             <th>Ações</th>
         </tr>
         </thead>
         <tbody>
-        <!--
-            th:each="c : ${consultas}" itera sobre a lista de consultas
-            recebida do controller, gerando uma linha <tr> para cada consulta.
-        -->
         <tr th:each="c : ${consultas}">
-            <td th:text="${c.id}"></td>
-            <!-- getDataFormatada() é um método da entidade Consulta que retorna dd/MM/yyyy HH:mm -->
-            <td th:text="${c.dataFormatada}"></td>
-            <!-- Operador ternário para evitar NullPointerException se paciente/médico for null -->
-            <td th:text="${c.paciente != null ? c.paciente.nome : 'N/A'}"></td>
-            <td th:text="${c.medico != null ? c.medico.nome : 'N/A'}"></td>
-            <!-- #numbers.formatDecimal(valor, 1, 2) formata com mínimo 1 dígito inteiro e 2 decimais -->
-            <td th:text="'R$ ' + ${#numbers.formatDecimal(c.valor, 1, 2)}"></td>
-            <td th:text="${c.observacao}"></td>
-            <td>
-                <!-- Botão Editar — redireciona para /consultas/editar/{id} -->
-                <a th:href="@{/consultas/editar/{id}(id=${c.id})}" class="btn btn-warning btn-sm"
+            <td th:text="${#temporals.format(c.data, 'dd/MM/yyyy')}"></td>
+            <td th:text="${c.horario}"></td>
+            <td th:text="${c.paciente.nome}"></td>
+            <td th:text="${c.medico.nome}"></td>
+            <td th:text="${c.tipo.descricao}"></td>
+            <!-- A cor do badge vem do próprio enum StatusConsulta -->
+            <td><span class="badge" th:classappend="${c.status.cor}" th:text="${c.status.descricao}"></span></td>
+            <td th:text="'R$ ' + ${#numbers.formatDecimal(c.valor, 1, 'POINT', 2, 'COMMA')}"></td>
+            <td class="text-nowrap">
+                <!-- Ver: abre o modal com os dados da consulta (sem sair da página) -->
+                <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal"
+                        th:data-bs-target="'#modalConsulta-' + ${c.id}">
+                    <i class="bi bi-eye"></i> Ver
+                </button>
+                <a th:href="@{/consultas/{id}/editar(id=${c.id})}" class="btn btn-warning btn-sm"
                    sec:authorize="hasAnyRole('ADMIN', 'RECEPCAO')">
                     <i class="bi bi-pencil"></i> Editar
                 </a>
-                <!-- Botão Excluir — redireciona para /consultas/excluir/{id} com confirmação JavaScript -->
-                <a th:href="@{/consultas/excluir/{id}(id=${c.id})}" class="btn btn-danger btn-sm" sec:authorize="hasRole('ADMIN')"
-                   onclick="return confirm('Deseja realmente excluir?')">
-                    <i class="bi bi-trash"></i> Excluir
-                </a>
+                <!--
+                    Excluir usa o verbo DELETE: th:method="delete" gera um campo oculto "_method"
+                    e o th:action inclui o token CSRF, que o Spring Security exige.
+                -->
+                <form th:action="@{/consultas/{id}(id=${c.id})}" th:method="delete" class="d-inline"
+                      sec:authorize="hasRole('ADMIN')" onsubmit="return confirm('Deseja realmente excluir?')">
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="bi bi-trash"></i> Excluir
+                    </button>
+                </form>
             </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(consultas)}">
+            <td colspan="8" class="text-center text-muted">Nenhuma consulta encontrada.</td>
         </tr>
         </tbody>
     </table>
+
+    <!--
+        Modal de detalhes: um por consulta (th:each), com id dinâmico "modalConsulta-{id}"
+        para corresponder ao data-bs-target do botão "Ver".
+    -->
+    <div th:each="c : ${consultas}" class="modal fade" th:id="'modalConsulta-' + ${c.id}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <div>
+                        <h5 class="modal-title mb-0"><i class="bi bi-calendar-check"></i> Consulta</h5>
+                        <small th:text="${#temporals.format(c.data, 'EEEE, dd ''de'' MMMM ''de'' yyyy')} + ' às ' + ${c.horario}"></small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Situação, tipo e valor em destaque -->
+                    <div class="d-flex flex-wrap gap-2 align-items-center mb-4">
+                        <span class="badge fs-6" th:classappend="${c.status.cor}" th:text="${c.status.descricao}"></span>
+                        <span class="badge fs-6 text-bg-light border" th:text="${c.tipo.descricao}"></span>
+                        <span class="ms-auto fs-4 fw-bold text-success"
+                              th:text="'R$ ' + ${#numbers.formatDecimal(c.valor, 1, 'POINT', 2, 'COMMA')}"></span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6 class="text-primary"><i class="bi bi-person"></i> Paciente</h6>
+                                <p class="fw-semibold mb-1" th:text="${c.paciente.nome}"></p>
+                                <p class="small text-muted mb-0">
+                                    CPF: <span th:text="${c.paciente.cpf}"></span><br>
+                                    <i class="bi bi-telephone"></i> <span th:text="${c.paciente.telefone}"></span><br>
+                                    <i class="bi bi-envelope"></i> <span th:text="${c.paciente.email}"></span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <h6 class="text-primary"><i class="bi bi-person-badge"></i> Médico</h6>
+                                <p class="fw-semibold mb-1" th:text="${c.medico.nome}"></p>
+                                <p class="small text-muted mb-0">
+                                    <span th:text="${c.medico.especialidade}"></span><br>
+                                    <span th:text="${c.medico.crm}"></span><br>
+                                    <i class="bi bi-telephone"></i> <span th:text="${c.medico.telefone}"></span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="border rounded p-3">
+                                <h6 class="text-primary"><i class="bi bi-chat-left-text"></i> Observação</h6>
+                                <p class="mb-0" th:text="${c.observacao}" th:if="${c.observacao != null}"></p>
+                                <p class="mb-0 text-muted fst-italic" th:if="${c.observacao == null}">Sem observações.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <a th:href="@{/consultas/{id}/editar(id=${c.id})}" class="btn btn-warning"
+                       sec:authorize="hasAnyRole('ADMIN', 'RECEPCAO')">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>
 
