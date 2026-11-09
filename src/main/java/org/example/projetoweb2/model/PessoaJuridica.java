@@ -73,17 +73,4 @@ public class PessoaJuridica extends Pessoa {
     public void setCnpj(String cnpj) {
         this.cnpj = cnpj;
     }
-
-    /**
-     * Retorna uma string com os dados resumidos da pessoa jurídica.
-     *
-     * @return string formatada com id, razão social e CNPJ
-     */
-    public String dados() {
-        return "PessoaJuridica [ID=" + getId()
-                + ", Razão Social=" + razaoSocial
-                + ", CNPJ=" + cnpj
-                + ", Email=" + getEmail()
-                + ", Telefone=" + getTelefone() + "]";
-    }
 }

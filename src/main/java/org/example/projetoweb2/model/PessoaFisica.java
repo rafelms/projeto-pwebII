@@ -1,5 +1,6 @@
 package org.example.projetoweb2.model;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.PrimaryKeyJoinColumn;
 import jakarta.validation.constraints.NotBlank;
@@ -26,10 +27,15 @@ public class PessoaFisica extends Pessoa {
     @Size(min = 3, max = 100, message = "O nome deve ter entre {min} e {max} caracteres.")
     private String nome;
 
-    /** CPF obrigatório no formato 999.999.999-99 (unicidade verificada no controller). */
+    /**
+     * CPF obrigatório no formato 999.999.999-99.
+     * É único entre TODAS as pessoas físicas (pacientes e médicos): unique = true no banco
+     * e verificação no controller, para mostrar a mensagem no formulário.
+     */
     @NotBlank(message = "O CPF é obrigatório.")
     @Pattern(regexp = "\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}",
             message = "O CPF deve estar no formato 999.999.999-99.")
+    @Column(unique = true)
     private String cpf;
 
     /**
