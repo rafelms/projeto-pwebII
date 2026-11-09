@@ -12,9 +12,9 @@
     - ${medicos}: lista de objetos Medico vindos do banco de dados
 
     Funcionalidades:
-    - Tabela com listagem de todos os médicos (ID, Nome, CRM, CPF, Email, Telefone)
+    - Tabela com listagem de todos os médicos (ID, Nome, CRM, Especialidade, CPF, Email, Telefone)
     - Botão "Novo Médico" para redirecionar ao formulário de cadastro
-    - Botões de ação por registro: Editar, Excluir (com confirmação) e Ver Consultas
+    - Botões de ação por registro: Editar, Excluir (DELETE, com confirmação) e Ver Consultas
     - Modais Bootstrap para visualizar as consultas de cada médico
 -->
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
@@ -64,6 +64,7 @@
             <th>ID</th>
             <th>Nome</th>
             <th>CRM</th>
+            <th>Especialidade</th>
             <th>CPF</th>
             <th>Email</th>
             <th>Telefone</th>
@@ -80,20 +81,26 @@
             <td th:text="${m.nome}"></td>
             <!-- CRM é atributo específico da classe Medico -->
             <td th:text="${m.crm}"></td>
+            <td th:text="${m.especialidade}"></td>
             <td th:text="${m.cpf}"></td>
             <td th:text="${m.email}"></td>
             <td th:text="${m.telefone}"></td>
             <td>
-                <!-- Botão Editar — redireciona para /medicos/editar/{id} -->
-                <a th:href="@{/medicos/editar/{id}(id=${m.id})}" class="btn btn-warning btn-sm"
+                <!-- Botão Editar — abre o formulário de edição (GET /medicos/{id}/editar) -->
+                <a th:href="@{/medicos/{id}/editar(id=${m.id})}" class="btn btn-warning btn-sm"
                    sec:authorize="hasRole('ADMIN')">
                     <i class="bi bi-pencil"></i> Editar
                 </a>
-                <!-- Botão Excluir — redireciona para /medicos/excluir/{id} com confirmação JavaScript -->
-                <a th:href="@{/medicos/excluir/{id}(id=${m.id})}" class="btn btn-danger btn-sm" sec:authorize="hasRole('ADMIN')"
-                   onclick="return confirm('Deseja realmente excluir?')">
-                    <i class="bi bi-trash"></i> Excluir
-                </a>
+                <!--
+                    Botão Excluir — envia DELETE /medicos/{id}.
+                    th:method="delete" gera o campo oculto "_method" e o th:action inclui o token CSRF.
+                -->
+                <form th:action="@{/medicos/{id}(id=${m.id})}" th:method="delete" class="d-inline"
+                      sec:authorize="hasRole('ADMIN')" onsubmit="return confirm('Deseja realmente excluir?')">
+                    <button type="submit" class="btn btn-danger btn-sm">
+                        <i class="bi bi-trash"></i> Excluir
+                    </button>
+                </form>
                 <!--
                     Botão Ver Consultas — abre o modal Bootstrap correspondente ao médico.
                     th:data-bs-target gera o seletor do modal dinamicamente: "#modalMedico-4", etc.
@@ -133,20 +140,19 @@
                             <tr>
                                 <th>Data</th>
                                 <th>Paciente</th>
+                                <th>Situação</th>
                                 <th>Valor</th>
-                                <th>Observação</th>
                             </tr>
                             </thead>
                             <tbody>
                             <!-- Itera sobre as consultas do médico -->
                             <tr th:each="c : ${m.consultaList}">
-                                <!-- getDataFormatada() retorna a data no formato dd/MM/yyyy HH:mm -->
-                                <td th:text="${c.dataFormatada}"></td>
-                                <!-- Operador ternário para evitar NullPointerException -->
-                                <td th:text="${c.paciente != null ? c.paciente.nome : 'N/A'}"></td>
+                                <!-- #temporals.format formata a data (LocalDate); o horário já vem como 09:00 -->
+                                <td th:text="${#temporals.format(c.data, 'dd/MM/yyyy')} + ' ' + ${c.horario}"></td>
+                                <td th:text="${c.paciente.nome}"></td>
+                                <td><span class="badge" th:classappend="${c.status.cor}" th:text="${c.status.descricao}"></span></td>
                                 <!-- #numbers.formatDecimal formata o valor com 2 casas decimais -->
-                                <td th:text="'R$ ' + ${#numbers.formatDecimal(c.valor, 1, 2)}"></td>
-                                <td th:text="${c.observacao}"></td>
+                                <td th:text="'R$ ' + ${#numbers.formatDecimal(c.valor, 1, 'POINT', 2, 'COMMA')}"></td>
                             </tr>
                             </tbody>
                         </table>

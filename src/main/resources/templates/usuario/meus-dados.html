@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<!--
+    usuario/meus-dados.html - Dados do usuário logado (qualquer perfil)
+
+    Esta página "decora" o layout.html usando layout:decorate="~{layout}",
+    herdando toda a estrutura (navbar, footer, CSS, JS) e substituindo
+    APENAS a área de conteúdo via layout:fragment="conteudo".
+
+    Dados recebidos do UsuarioController (método meusDados):
+    - ${usuario}:  conta do usuário logado (login e perfis)
+    - ${paciente}: paciente vinculado à conta (só existe se a conta for de um paciente)
+    - ${medico}:   médico vinculado à conta (só existe se a conta for de um médico)
+    - ${alterarSenha}: formulário "Alterar senha" (DTO AlterarSenha)
+
+    É a única tela do perfil PACIENTE: ele vê apenas os próprios dados e consultas.
+-->
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<!-- layout:decorate="~{layout}" indica que esta página herda o layout.html -->
+<head>
+    <title>Meus dados</title>
+</head>
+<body>
+
+<!-- layout:fragment="conteudo" substitui a área de conteúdo do layout mestre -->
+<div layout:fragment="conteudo">
+
+    <h2>Meus dados</h2>
+
+    <div class="row g-3">
+        <!-- Conta de acesso: vem da tabela usuario -->
+        <div class="col-md-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-shield-lock"></i> Conta de acesso</h5>
+                    <p class="mb-1"><strong>Usuário:</strong> <span th:text="${usuario.usuario}"></span></p>
+                    <p class="mb-0"><strong>Perfis:</strong>
+                        <span th:each="p : ${usuario.perfis}" class="badge text-bg-primary me-1" th:text="${p.nome}"></span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!--
+            Pessoa vinculada à conta. th:with escolhe o paciente ou o médico;
+            se a conta não tiver pessoa (ex.: admin, recepcao), mostra um aviso.
+        -->
+        <div class="col-md-7" th:with="pessoa=${paciente != null ? paciente : medico}">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-person-vcard"></i> Dados pessoais</h5>
+                    <div th:if="${pessoa != null}">
+                        <p class="mb-1"><strong>Nome:</strong> <span th:text="${pessoa.nome}"></span></p>
+                        <p class="mb-1"><strong>CPF:</strong> <span th:text="${pessoa.cpf}"></span></p>
+                        <p class="mb-1"><strong>Email:</strong> <span th:text="${pessoa.email}"></span></p>
+                        <p class="mb-1"><strong>Telefone:</strong> <span th:text="${pessoa.telefone}"></span></p>
+                        <p class="mb-0" th:if="${medico != null}"><strong>CRM:</strong> <span th:text="${medico.crm}"></span></p>
+                    </div>
+                    <p th:if="${pessoa == null}" class="text-muted mb-0">
+                        Esta conta é de um funcionário e não está vinculada a um paciente ou médico.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consultas do paciente ou do médico logado (lista consultaList da entidade) -->
+    <!--
+        Alterar senha (PUT /usuarios/senha): o th:method="put" gera o campo oculto "_method".
+        A senha atual é conferida no UsuarioService com passwordEncoder.matches().
+        Os campos são type="password" sem th:field, para a senha nunca voltar preenchida.
+    -->
+    <div class="row mt-3">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-key"></i> Alterar senha</h5>
+                    <form th:action="@{/usuarios/senha}" th:method="put" th:object="${alterarSenha}" novalidate>
+                        <div class="mb-2">
+                            <label for="senhaAtual" class="form-label small">Senha atual</label>
+                            <input type="password" class="form-control" id="senhaAtual" name="senhaAtual"
+                                   th:classappend="${#fields.hasErrors('senhaAtual')} ? 'is-invalid'" autocomplete="current-password">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('senhaAtual')}" th:errors="*{senhaAtual}"></div>
+                        </div>
+                        <div class="mb-2">
+                            <label for="novaSenha" class="form-label small">Nova senha</label>
+                            <input type="password" class="form-control" id="novaSenha" name="novaSenha"
+                                   th:classappend="${#fields.hasErrors('novaSenha')} ? 'is-invalid'" autocomplete="new-password">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('novaSenha')}" th:errors="*{novaSenha}"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmacao" class="form-label small">Repita a nova senha</label>
+                            <input type="password" class="form-control" id="confirmacao" name="confirmacao"
+                                   th:classappend="${#fields.hasErrors('confirmacao')} ? 'is-invalid'" autocomplete="new-password">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('confirmacao')}" th:errors="*{confirmacao}"></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">
+                            <i class="bi bi-check-lg"></i> Salvar nova senha
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- th:if é avaliado ANTES de th:with no mesmo elemento, por isso a verificação usa paciente/medico -->
+    <div th:if="${paciente != null or medico != null}"
+         th:with="consultas=${paciente != null ? paciente.consultaList : medico.consultaList}" class="mt-4">
+        <h4>Minhas consultas</h4>
+        <table class="table table-striped table-hover" th:if="${!consultas.isEmpty()}">
+            <thead class="table-primary">
+            <tr>
+                <th>Data</th>
+                <th th:text="${paciente != null ? 'Médico' : 'Paciente'}">Médico</th>
+                <th>Tipo</th>
+                <th>Situação</th>
+                <th>Valor</th>
+                <th>Observação</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${consultas}">
+                <td th:text="${#temporals.format(c.data, 'dd/MM/yyyy')} + ' ' + ${c.horario}"></td>
+                <td th:text="${paciente != null ? c.medico.nome + ' (' + c.medico.especialidade + ')' : c.paciente.nome}"></td>
+                <td th:text="${c.tipo.descricao}"></td>
+                <td><span class="badge" th:classappend="${c.status.cor}" th:text="${c.status.descricao}"></span></td>
+                <td th:text="'R$ ' + ${#numbers.formatDecimal(c.valor, 1, 'POINT', 2, 'COMMA')}"></td>
+                <td th:text="${c.observacao}"></td>
+            </tr>
+            </tbody>
+        </table>
+        <p th:if="${consultas.isEmpty()}" class="text-muted">Nenhuma consulta cadastrada.</p>
+    </div>
+
+</div>
+
+</body>
+</html>

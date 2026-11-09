@@ -42,7 +42,8 @@
             <div class="card shadow-sm">
                 <div class="card-body">
                     <!--
-                        th:action="@{/medicos/salvar}" define a URL de destino do POST.
+                        Verbo HTTP: medico novo -> POST /medicos; edição -> PUT /medicos/{id} (o id vai na URL).
+                        th:method="put" gera method="post" + campo oculto "_method" com o valor "put".
                         th:object="${medico}" vincula o formulário ao objeto Medico do model.
                         th:field="*{campo}" faz o binding bidirecional entre o input e o atributo do objeto.
                     -->
@@ -54,15 +55,14 @@
                           (borda vermelha) somente quando o campo possui erro no BindingResult.
                         - th:errors="*{campo}" exibe a(s) mensagem(ns) definidas nas anotações.
                     -->
-                    <form th:action="@{/medicos/salvar}" th:object="${medico}" method="post" novalidate>
+                    <form th:action="${medico.id == null} ? @{/medicos} : @{/medicos/{id}(id=${medico.id})}"
+                          th:method="${medico.id == null} ? 'post' : 'put'"
+                          th:object="${medico}" novalidate>
 
                         <!-- Resumo exibido quando o formulário volta do servidor com erros -->
                         <div th:if="${#fields.hasErrors('*')}" class="alert alert-danger">
                             <i class="bi bi-exclamation-triangle"></i> Corrija os campos destacados abaixo.
                         </div>
-
-                        <!-- Campo oculto com o ID — essencial para edição (identifica o registro existente) -->
-                        <input type="hidden" th:field="*{id}">
 
                         <!-- Campo nome: herdado de PessoaFisica (@NotBlank, @Size) -->
                         <div class="mb-3">
@@ -102,6 +102,52 @@
                             <input type="text" class="form-control" id="crm" th:field="*{crm}"
                                    th:errorclass="is-invalid" placeholder="CRM-SP 12345">
                             <div class="invalid-feedback" th:if="${#fields.hasErrors('crm')}" th:errors="*{crm}"></div>
+                        </div>
+
+                        <!-- Especialidade e valor da consulta: aparecem no agendamento (o valor vira a sugestão) -->
+                        <div class="row">
+                            <div class="col-md-7 mb-3">
+                                <label for="especialidade" class="form-label">Especialidade</label>
+                                <input type="text" class="form-control" id="especialidade" th:field="*{especialidade}"
+                                       th:errorclass="is-invalid" placeholder="Cardiologia">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('especialidade')}" th:errors="*{especialidade}"></div>
+                            </div>
+                            <div class="col-md-5 mb-3">
+                                <label for="valorConsulta" class="form-label">Valor da consulta (R$)</label>
+                                <input type="number" step="0.01" class="form-control" id="valorConsulta" th:field="*{valorConsulta}"
+                                       th:errorclass="is-invalid" placeholder="150.00">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('valorConsulta')}" th:errors="*{valorConsulta}"></div>
+                            </div>
+                        </div>
+
+                        <!--
+                            CONTA DE ACESSO (Spring Security): Pessoa -> Usuario (um-para-um).
+                            "*{usuario.usuario}" acessa o login dentro do objeto medico.usuario.
+                            A senha NÃO usa th:field para que o hash gravado nunca seja enviado
+                            de volta ao navegador; na edição, deixá-la em branco mantém a atual.
+                            Um médico novo recebe o perfil inicial MEDICO.
+                        -->
+                        <h5 class="mt-4"><i class="bi bi-shield-lock"></i> Conta de acesso</h5>
+                        <p class="text-muted small">Perfil inicial: <span class="badge text-bg-info">MEDICO</span></p>
+
+                        <!-- id da conta: usado só para o texto de ajuda da senha; o controller sempre busca a conta no banco -->
+                        <input type="hidden" th:field="*{usuario.id}">
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="login" class="form-label">Usuário</label>
+                                <input type="text" class="form-control" id="login" th:field="*{usuario.usuario}"
+                                       th:errorclass="is-invalid" placeholder="ex.: ana.costa" autocomplete="off">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('usuario.usuario')}" th:errors="*{usuario.usuario}"></div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="senha" class="form-label">Senha</label>
+                                <input type="password" class="form-control" id="senha" name="usuario.senha"
+                                       th:classappend="${#fields.hasErrors('usuario.senha')} ? 'is-invalid'"
+                                       th:placeholder="${medico.usuario.id != null ? 'Deixe em branco para manter a atual' : 'Mínimo 3 caracteres'}"
+                                       autocomplete="new-password">
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('usuario.senha')}" th:errors="*{usuario.senha}"></div>
+                            </div>
                         </div>
 
                         <!-- Botões de ação com d-flex gap-2 para espaçamento horizontal -->

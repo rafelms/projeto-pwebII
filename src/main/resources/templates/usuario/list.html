@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<!--
+    usuario/list.html - Listagem das contas de acesso (somente ADMIN)
+
+    Esta página "decora" o layout.html usando layout:decorate="~{layout}",
+    herdando toda a estrutura (navbar, footer, CSS, JS) e substituindo
+    APENAS a área de conteúdo via layout:fragment="conteudo".
+
+    Dados recebidos do UsuarioController (método listar):
+    - ${usuarios}: lista de objetos Usuario vindos do banco de dados
+
+    A coluna "Senha (hash)" mostra o início do valor gravado no banco:
+    é um hash BCrypt ($2a$10$...), e não a senha digitada.
+-->
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<!-- layout:decorate="~{layout}" indica que esta página herda o layout.html -->
+<head>
+    <title>Usuários</title>
+</head>
+<body>
+
+<!-- layout:fragment="conteudo" substitui a área de conteúdo do layout mestre -->
+<div layout:fragment="conteudo">
+
+    <h2>Usuários do sistema</h2>
+    <p class="text-muted">
+        Contas gravadas nas tabelas <code>usuario</code>, <code>perfil</code> e <code>usuario_perfil</code>.
+        Para criar a conta de um paciente ou médico, use o cadastro da própria pessoa.
+    </p>
+
+    <table class="table table-striped table-hover">
+        <!-- Cabeçalho da tabela com fundo azul (table-primary) -->
+        <thead class="table-primary">
+        <tr>
+            <th>ID</th>
+            <th>Usuário</th>
+            <th>Perfis</th>
+            <th>Senha (hash)</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="u : ${usuarios}">
+            <td th:text="${u.id}"></td>
+            <td th:text="${u.usuario}"></td>
+            <td>
+                <!-- Um usuário pode ter vários perfis (muitos-para-muitos) -->
+                <span th:each="p : ${u.perfis}" class="badge text-bg-primary me-1" th:text="${p.nome}"></span>
+            </td>
+            <!-- #strings.abbreviate corta o hash para não ocupar a tela inteira -->
+            <td><code th:text="${#strings.abbreviate(u.senha, 24)}"></code></td>
+        </tr>
+        </tbody>
+    </table>
+
+</div>
+
+</body>
+</html>

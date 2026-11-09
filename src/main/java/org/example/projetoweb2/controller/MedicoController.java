@@ -3,42 +3,56 @@ package org.example.projetoweb2.controller;
 import jakarta.validation.Valid;
 import org.example.projetoweb2.dto.FiltroPessoa;
 import org.example.projetoweb2.model.Medico;
+import org.example.projetoweb2.model.Usuario;
 import org.example.projetoweb2.repository.ConsultaRepository;
 import org.example.projetoweb2.repository.MedicoRepository;
+import org.example.projetoweb2.repository.PessoaFisicaRepository;
+import org.example.projetoweb2.service.UsuarioService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-
+/**
+ * Controller dos médicos.
+ *
+ * Rotas (cada operação usa o verbo HTTP correspondente):
+ * - GET    /medicos              lista (com filtro por nome)
+ * - GET    /medicos/novo         formulário de cadastro
+ * - POST   /medicos              cadastra
+ * - GET    /medicos/{id}/editar  formulário de edição
+ * - PUT    /medicos/{id}         altera
+ * - DELETE /medicos/{id}         exclui
+ */
 @Controller
 @RequestMapping("/medicos")
 public class MedicoController {
 
     private final MedicoRepository repository;
 
+    private final PessoaFisicaRepository pessoaFisicaRepository;
+
     private final ConsultaRepository consultaRepository;
 
-    /**
-     * Construtor com injeção de dependência dos repositórios.
-     *
-     * @param repository         repositório de médicos
-     * @param consultaRepository repositório de consultas (verificação antes da exclusão)
-     */
-    public MedicoController(MedicoRepository repository, ConsultaRepository consultaRepository) {
+    private final UsuarioService usuarioService;
+
+    public MedicoController(MedicoRepository repository, PessoaFisicaRepository pessoaFisicaRepository,
+                            ConsultaRepository consultaRepository, UsuarioService usuarioService) {
         this.repository = repository;
+        this.pessoaFisicaRepository = pessoaFisicaRepository;
         this.consultaRepository = consultaRepository;
+        this.usuarioService = usuarioService;
     }
 
     /**
      * Lista os médicos cadastrados, aplicando o filtro por nome se informado.
-     * O filtro é validado com @Valid; se for inválido, a mensagem de erro
-     * é exibida no formulário de busca e a lista completa é mostrada.
      *
      * @param filtro objeto com os parâmetros de busca (query string)
      * @param result resultado da validação do filtro
@@ -63,52 +77,92 @@ public class MedicoController {
      */
     @GetMapping("/novo")
     public String novo(Model model) {
-        model.addAttribute("medico", new Medico());
+        Medico medico = new Medico();
+        medico.setUsuario(new Usuario()); // conta vazia para os campos usuário/senha do formulário
+        model.addAttribute("medico", medico);
         return "medico/form";
     }
 
     /**
      * Exibe o formulário preenchido para editar um médico existente.
-     * Se o ID não existir, volta para a listagem com mensagem de erro.
      *
-     * @param id                 identificador do médico a ser editado
+     * @param id                 identificador do médico
      * @param model              objeto do Spring MVC para enviar dados à view
      * @param redirectAttributes atributos "flash" que sobrevivem ao redirect
      * @return nome da view do formulário ou redirecionamento para a listagem
      */
-    @GetMapping("/editar/{id}")
+    @GetMapping("/{id}/editar")
     public String editar(@PathVariable Long id, Model model, RedirectAttributes redirectAttributes) {
         Medico medico = repository.findById(id).orElse(null);
         if (medico == null) {
             redirectAttributes.addFlashAttribute("erro", "Médico não encontrado: " + id);
             return "redirect:/medicos";
         }
+        if (medico.getUsuario() == null) {
+            medico.setUsuario(new Usuario()); // médico ainda sem conta: será criada ao salvar
+        }
         model.addAttribute("medico", medico);
         return "medico/form";
     }
 
     /**
-     * Valida e salva um médico novo ou atualiza um existente.
-     *
-     * @Valid dispara as anotações de Bean Validation da entidade (e das superclasses).
-     * Além delas, é verificado se o CPF e o CRM já pertencem a outro médico.
-     *
-     * @param medico             objeto médico recebido do formulário
-     * @param result             resultado da validação
-     * @param redirectAttributes atributos "flash" para a mensagem de sucesso
-     * @return formulário (se houver erros) ou redirecionamento para a listagem
+     * Cadastra um novo médico (POST).
      */
-    @PostMapping("/salvar")
-    public String salvar(@Valid @ModelAttribute("medico") Medico medico, BindingResult result,
-                         RedirectAttributes redirectAttributes) {
+    @PostMapping
+    public String cadastrar(@Valid @ModelAttribute("medico") Medico medico, BindingResult result,
+                            RedirectAttributes redirectAttributes) {
+        medico.setId(null);
+        return salvar(medico, result, redirectAttributes);
+    }
+
+    /**
+     * Altera um médico existente (PUT). O id vem da URL, e não do formulário.
+     */
+    @PutMapping("/{id}")
+    public String alterar(@PathVariable Long id, @Valid @ModelAttribute("medico") Medico medico,
+                          BindingResult result, RedirectAttributes redirectAttributes) {
+        medico.setId(id);
+        return salvar(medico, result, redirectAttributes);
+    }
+
+    /**
+     * Exclui um médico (DELETE). Não permite excluir quem possui consultas.
+     *
+     * @param id                 identificador do médico
+     * @param redirectAttributes atributos "flash" para mensagens de sucesso/erro
+     * @return redirecionamento para a listagem de médicos
+     */
+    @DeleteMapping("/{id}")
+    public String excluir(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        if (!repository.existsById(id)) {
+            redirectAttributes.addFlashAttribute("erro", "Médico não encontrado: " + id);
+        } else if (consultaRepository.existsByMedicoId(id)) {
+            redirectAttributes.addFlashAttribute("erro",
+                    "Não é possível excluir: o médico possui consultas cadastradas.");
+        } else {
+            repository.deleteById(id);
+            redirectAttributes.addFlashAttribute("sucesso", "Médico excluído com sucesso!");
+        }
+        return "redirect:/medicos";
+    }
+
+    /**
+     * Validações comuns ao cadastro e à alteração; se tudo estiver certo, grava o médico.
+     *
+     * - o CPF não pode pertencer a outra pessoa física (paciente ou médico);
+     * - o CRM não pode pertencer a outro médico;
+     * - o UsuarioService valida o login/senha e monta a conta: um médico novo recebe
+     *   o perfil inicial MEDICO e a senha codificada em BCrypt.
+     */
+    private String salvar(Medico medico, BindingResult result, RedirectAttributes redirectAttributes) {
         boolean novo = medico.getId() == null;
 
         if (!result.hasFieldErrors("cpf")) {
             boolean cpfDuplicado = novo
-                    ? repository.existsByCpf(medico.getCpf())
-                    : repository.existsByCpfAndIdNot(medico.getCpf(), medico.getId());
+                    ? pessoaFisicaRepository.existsByCpf(medico.getCpf())
+                    : pessoaFisicaRepository.existsByCpfAndIdNot(medico.getCpf(), medico.getId());
             if (cpfDuplicado) {
-                result.rejectValue("cpf", "cpf.duplicado", "Já existe um médico cadastrado com este CPF.");
+                result.rejectValue("cpf", "cpf.duplicado", "Já existe uma pessoa cadastrada com este CPF.");
             }
         }
 
@@ -121,35 +175,18 @@ public class MedicoController {
             }
         }
 
+        // Conta já gravada no banco (null para médico novo ou ainda sem conta)
+        Usuario contaAtual = novo ? null
+                : repository.findById(medico.getId()).map(Medico::getUsuario).orElse(null);
+        usuarioService.validar(medico.getUsuario(), contaAtual, result);
+
         if (result.hasErrors()) {
             return "medico/form";
         }
 
+        medico.setUsuario(usuarioService.prepararConta(medico.getUsuario(), contaAtual, "MEDICO"));
         repository.save(medico);
         redirectAttributes.addFlashAttribute("sucesso", "Médico salvo com sucesso!");
-        return "redirect:/medicos";
-    }
-
-    /**
-     * Exclui um médico pelo seu identificador.
-     * Para manter a integridade referencial, não permite excluir
-     * um médico que possui consultas vinculadas.
-     *
-     * @param id                 identificador do médico a ser excluído
-     * @param redirectAttributes atributos "flash" para mensagens de sucesso/erro
-     * @return redirecionamento para a listagem de médicos
-     */
-    @GetMapping("/excluir/{id}")
-    public String excluir(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        if (!repository.existsById(id)) {
-            redirectAttributes.addFlashAttribute("erro", "Médico não encontrado: " + id);
-        } else if (consultaRepository.existsByMedicoId(id)) {
-            redirectAttributes.addFlashAttribute("erro",
-                    "Não é possível excluir: o médico possui consultas cadastradas.");
-        } else {
-            repository.deleteById(id);
-            redirectAttributes.addFlashAttribute("sucesso", "Médico excluído com sucesso!");
-        }
         return "redirect:/medicos";
     }
 }
