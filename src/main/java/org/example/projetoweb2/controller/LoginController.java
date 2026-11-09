@@ -1,5 +1,6 @@
 package org.example.projetoweb2.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,12 +25,18 @@ public class LoginController {
     }
 
     /**
-     * Página inicial: redireciona para a listagem de consultas.
+     * Página inicial (para onde o usuário vai após o login).
+     * O PACIENTE não acessa as listagens, então vai para "Meus dados";
+     * os demais perfis vão para a listagem de consultas.
      *
-     * @return redirecionamento para a listagem de consultas
+     * @param request requisição atual, usada para consultar o perfil do usuário logado
+     * @return redirecionamento conforme o perfil
      */
     @GetMapping("/")
-    public String home() {
+    public String home(HttpServletRequest request) {
+        if (request.isUserInRole("PACIENTE")) {
+            return "redirect:/usuarios/meus-dados";
+        }
         return "redirect:/consultas";
     }
 
@@ -39,7 +46,7 @@ public class LoginController {
      *
      * Usa @RequestMapping (todos os métodos HTTP) porque o Spring Security
      * ENCAMINHA (forward) a requisição original para esta URL: se o acesso
-     * negado ocorreu em um POST (ex.: /medicos/salvar), o forward também é POST.
+     * negado ocorreu em um POST, PUT ou DELETE (ex.: DELETE /medicos/4), o forward mantém o mesmo verbo.
      *
      * @return nome da view de acesso negado
      */
