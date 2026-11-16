@@ -38,6 +38,7 @@
             <th>Usuário</th>
             <th>Perfis</th>
             <th>Senha (hash)</th>
+            <th>Ações</th>
         </tr>
         </thead>
         <tbody>
@@ -50,9 +51,56 @@
             </td>
             <!--/* #strings.abbreviate corta o hash para não ocupar a tela inteira */-->
             <td><code th:text="${#strings.abbreviate(u.senha, 24)}"></code></td>
+            <td>
+                <!--/* Abre o modal "Alterar senha" desta conta: "#modalSenha-1", etc. */-->
+                <button class="btn btn-warning btn-sm" type="button"
+                        th:data-bs-target="'#modalSenha-' + ${u.id}"
+                        data-bs-toggle="modal">
+                    <i class="bi bi-key"></i> Alterar senha
+                </button>
+            </td>
         </tr>
         </tbody>
     </table>
+
+    <!--/*
+        Um modal "Alterar senha" por conta, como nas outras listagens (th:each + id dinâmico).
+        Envia PUT /usuarios/{id}/senha (th:method="put" gera o campo oculto "_method" e o th:action
+        inclui o token CSRF). O ADMIN não precisa da senha atual da conta: só da nova e da confirmação.
+        Ao terminar, o controller redireciona para /usuarios, recarregando a página com a mensagem.
+    */-->
+    <div th:each="u : ${usuarios}">
+        <div class="modal fade" th:id="'modalSenha-' + ${u.id}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title" th:text="'Alterar senha de ' + ${u.usuario}"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <form th:action="@{/usuarios/{id}/senha(id=${u.id})}" th:method="put" novalidate>
+                        <div class="modal-body">
+                            <div class="mb-2">
+                                <label th:for="'novaSenha-' + ${u.id}" class="form-label small">Nova senha</label>
+                                <input type="password" class="form-control" th:id="'novaSenha-' + ${u.id}"
+                                       name="novaSenha" autocomplete="new-password">
+                            </div>
+                            <div class="mb-2">
+                                <label th:for="'confirmacao-' + ${u.id}" class="form-label small">Repita a nova senha</label>
+                                <input type="password" class="form-control" th:id="'confirmacao-' + ${u.id}"
+                                       name="confirmacao" autocomplete="new-password">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="bi bi-check-lg"></i> Salvar nova senha
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>
 

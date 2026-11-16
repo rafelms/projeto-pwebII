@@ -1,6 +1,7 @@
 package org.example.projetoweb2.service;
 
 import org.example.projetoweb2.dto.AlterarSenha;
+import org.example.projetoweb2.dto.RedefinirSenha;
 import org.example.projetoweb2.model.Papel;
 import org.example.projetoweb2.model.Perfil;
 import org.example.projetoweb2.model.Usuario;
@@ -113,13 +114,39 @@ public class UsuarioService {
                 && !passwordEncoder.matches(dados.getSenhaAtual(), usuario.getSenha())) {
             result.rejectValue("senhaAtual", "senha.incorreta", "A senha atual está incorreta.");
         }
-        if (!result.hasFieldErrors("confirmacao") && !dados.getConfirmacao().equals(dados.getNovaSenha())) {
-            result.rejectValue("confirmacao", "senha.diferente", "A confirmação não é igual à nova senha.");
-        }
+        conferirConfirmacao(dados, result);
         if (result.hasErrors()) {
             return;
         }
 
         usuario.setSenha(passwordEncoder.encode(dados.getNovaSenha()));
+    }
+
+    /**
+     * Redefine a senha de qualquer conta (uso do administrador, sem exigir a senha atual).
+     * Também grava o novo hash por dirty checking, como o método acima.
+     *
+     * @param id     identificador da conta
+     * @param dados  nova senha e confirmação
+     * @param result resultado da validação; recebe o erro se a confirmação não conferir
+     * @return false se a conta não existe
+     */
+    @Transactional
+    public boolean redefinirSenha(Long id, RedefinirSenha dados, BindingResult result) {
+        Usuario usuario = usuarioRepository.findById(id).orElse(null);
+        if (usuario == null) {
+            return false;
+        }
+        conferirConfirmacao(dados, result);
+        if (!result.hasErrors()) {
+            usuario.setSenha(passwordEncoder.encode(dados.getNovaSenha()));
+        }
+        return true;
+    }
+
+    private void conferirConfirmacao(RedefinirSenha dados, BindingResult result) {
+        if (!result.hasFieldErrors("confirmacao") && !dados.getConfirmacao().equals(dados.getNovaSenha())) {
+            result.rejectValue("confirmacao", "senha.diferente", "A confirmação não é igual à nova senha.");
+        }
     }
 }

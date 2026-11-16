@@ -50,9 +50,10 @@ public class SecurityConfiguration {
         http
                 .authorizeHttpRequests(authorize -> authorize
                         // console do banco e lista de usuários: somente administrador.
-                        // "/usuarios" casa só com a URL exata: "Meus dados" e a troca de senha
+                        // "/usuarios" casa só com a URL exata: "Meus dados" e a troca da própria senha
                         // (/usuarios/meus-dados e /usuarios/senha) caem em anyRequest(), abaixo.
-                        .requestMatchers("/h2-console/**", "/usuarios").hasRole("ADMIN")
+                        // A redefinição da senha de outra conta (/usuarios/{id}/senha) é do ADMIN.
+                        .requestMatchers("/h2-console/**", "/usuarios", "/usuarios/*/senha").hasRole("ADMIN")
 
                         // exclusões (DELETE): somente administrador
                         .requestMatchers(HttpMethod.DELETE, "/pacientes/*", "/medicos/*", "/consultas/*")

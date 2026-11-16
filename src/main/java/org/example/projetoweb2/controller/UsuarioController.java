@@ -2,6 +2,7 @@ package org.example.projetoweb2.controller;
 
 import jakarta.validation.Valid;
 import org.example.projetoweb2.dto.AlterarSenha;
+import org.example.projetoweb2.dto.RedefinirSenha;
 import org.example.projetoweb2.repository.MedicoRepository;
 import org.example.projetoweb2.repository.PacienteRepository;
 import org.example.projetoweb2.repository.UsuarioRepository;
@@ -13,6 +14,7 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -22,7 +24,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  *
  * - GET /usuarios:            lista todas as contas e seus perfis (somente ADMIN);
  * - GET /usuarios/meus-dados: dados do usuário logado (qualquer perfil);
- * - PUT /usuarios/senha:      o usuário logado altera a própria senha.
+ * - PUT /usuarios/senha:      o usuário logado altera a própria senha;
+ * - PUT /usuarios/{id}/senha: o ADMIN redefine a senha de qualquer conta (modal da lista).
  */
 @Controller
 @RequestMapping("/usuarios")
@@ -97,6 +100,32 @@ public class UsuarioController {
         }
         redirectAttributes.addFlashAttribute("sucesso", "Senha alterada com sucesso!");
         return "redirect:/usuarios/meus-dados";
+    }
+
+    /**
+     * Redefine a senha de uma conta a partir da lista de usuários (somente ADMIN).
+     *
+     * O formulário é um modal por linha e a página sempre recarrega: com sucesso mostra a
+     * mensagem verde; com erro, a mensagem do primeiro problema encontrado.
+     *
+     * @param id                 conta que terá a senha trocada
+     * @param dados              nova senha e confirmação
+     * @param result             resultado da validação
+     * @param redirectAttributes atributos "flash" para a mensagem
+     * @return redirecionamento para a lista de usuários
+     */
+    @PutMapping("/{id}/senha")
+    public String redefinirSenha(@PathVariable Long id, @Valid @ModelAttribute RedefinirSenha dados,
+                                 BindingResult result, RedirectAttributes redirectAttributes) {
+        if (!usuarioService.redefinirSenha(id, dados, result)) {
+            redirectAttributes.addFlashAttribute("erro", "Usuário não encontrado.");
+        } else if (result.hasErrors()) {
+            redirectAttributes.addFlashAttribute("erro", "Senha não alterada: "
+                    + result.getAllErrors().get(0).getDefaultMessage());
+        } else {
+            redirectAttributes.addFlashAttribute("sucesso", "Senha alterada com sucesso!");
+        }
+        return "redirect:/usuarios";
     }
 
     /**
