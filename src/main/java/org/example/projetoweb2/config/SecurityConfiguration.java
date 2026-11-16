@@ -23,11 +23,8 @@ import static org.springframework.security.config.Customizer.withDefaults;
  * sozinho o único UserDetailsService da aplicação (UsuarioDetailsService)
  * e o PasswordEncoder abaixo, e passa a usá-los no login.
  *
- * Perfis do sistema (tabela perfil):
- * - ADMIN:    acesso total (inclusive cadastro de médicos, exclusões, usuários e console H2);
- * - RECEPCAO: cadastra e edita pacientes e consultas; apenas visualiza médicos;
- * - MEDICO:   apenas visualiza pacientes, médicos e consultas;
- * - PACIENTE: usuário comum, acessa somente "Meus dados" (seus dados e suas consultas).
+ * Os perfis do sistema (ADMIN, RECEPCAO, MEDICO e PACIENTE) e o que cada um
+ * pode fazer estão descritos no enum Papel.
  */
 @Configuration
 @EnableWebSecurity
@@ -52,14 +49,10 @@ public class SecurityConfiguration {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(authorize -> authorize
-                        // recursos públicos (página de login e arquivos estáticos)
-                        .requestMatchers("/login", "/css/**", "/js/**", "/images/**").permitAll()
-
-                        // console do banco e lista de usuários: somente administrador
+                        // console do banco e lista de usuários: somente administrador.
+                        // "/usuarios" casa só com a URL exata: "Meus dados" e a troca de senha
+                        // (/usuarios/meus-dados e /usuarios/senha) caem em anyRequest(), abaixo.
                         .requestMatchers("/h2-console/**", "/usuarios").hasRole("ADMIN")
-
-                        // "Meus dados" e troca da própria senha: qualquer usuário autenticado, inclusive PACIENTE
-                        .requestMatchers("/usuarios/meus-dados", "/usuarios/senha").authenticated()
 
                         // exclusões (DELETE): somente administrador
                         .requestMatchers(HttpMethod.DELETE, "/pacientes/*", "/medicos/*", "/consultas/*")
@@ -80,13 +73,14 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/pacientes", "/medicos", "/consultas")
                         .hasAnyRole("ADMIN", "RECEPCAO", "MEDICO")
 
-                        // demais requisições exigem usuário autenticado
+                        // demais requisições exigem usuário autenticado, de qualquer perfil
+                        // (inclusive PACIENTE): página inicial, "Meus dados" e troca da própria senha
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")                       // URL da página de login personalizada
                         .defaultSuccessUrl("/", true)              // após logar, "/" escolhe a tela pelo perfil
-                        .permitAll()
+                        .permitAll()                               // libera a página de login para quem não está logado
                 )
                 .logout(logout -> logout
                         .logoutSuccessUrl("/login?logout")         // volta ao login com mensagem
