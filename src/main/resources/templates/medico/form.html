@@ -73,11 +73,12 @@
                             <div class="invalid-feedback" th:errors="*{nome}"></div>
                         </div>
 
-                        <!--/* Campo cpf (@NotBlank, @Pattern no PessoaFisicaForm; unicidade no controller) */-->
+                        <!--/* Campo cpf (@NotBlank, @Pattern no PessoaFisicaForm; unicidade no controller; máscara no script do layout.html) */-->
                         <div class="mb-3">
                             <label for="cpf" class="form-label">CPF</label>
                             <input type="text" class="form-control" id="cpf" th:field="*{cpf}"
-                                   th:errorclass="is-invalid" placeholder="999.999.999-99">
+                                   th:errorclass="is-invalid" placeholder="999.999.999-99"
+                                   data-mascara="cpf" inputmode="numeric" maxlength="14">
                             <div class="invalid-feedback" th:errors="*{cpf}"></div>
                         </div>
 
@@ -89,11 +90,12 @@
                             <div class="invalid-feedback" th:errors="*{email}"></div>
                         </div>
 
-                        <!--/* Campo telefone (@NotBlank, @Pattern no PessoaFisicaForm) */-->
+                        <!--/* Campo telefone (@NotBlank, @Pattern no PessoaFisicaForm; máscara no script do layout.html) */-->
                         <div class="mb-3">
                             <label for="telefone" class="form-label">Telefone</label>
                             <input type="text" class="form-control" id="telefone" th:field="*{telefone}"
-                                   th:errorclass="is-invalid" placeholder="(99) 99999-9999">
+                                   th:errorclass="is-invalid" placeholder="(99) 99999-9999"
+                                   data-mascara="telefone" inputmode="numeric" maxlength="15">
                             <div class="invalid-feedback" th:errors="*{telefone}"></div>
                         </div>
 

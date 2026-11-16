@@ -81,5 +81,47 @@
          (navbar responsiva, modais, dropdowns, etc.) */-->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+    <!--/*
+        Máscaras de digitação para campos marcados com data-mascara="cpf" ou "telefone"
+        (formulários de paciente e médico). Fica no layout para ser escrita uma única vez.
+        - cpf: 999.999.999-99
+        - telefone: (99) 9999-9999 com 10 dígitos; (99) 99999-9999 com 11 (celular)
+        Os formatos são os mesmos do @Pattern do PessoaFisicaForm, então a validação no
+        servidor continua valendo para quem desativar o JavaScript. O valor que já vem
+        preenchido (edição ou volta com erro) também é formatado ao abrir a página.
+        Em telas sem esses campos o script não faz nada.
+    */-->
+    <script>
+        (function () {
+            const formatos = {
+                cpf: function (d) {
+                    d = d.slice(0, 11);
+                    if (d.length > 9) return d.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+                    if (d.length > 6) return d.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+                    if (d.length > 3) return d.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+                    return d;
+                },
+                telefone: function (d) {
+                    d = d.slice(0, 11);
+                    if (d.length > 10) return d.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+                    if (d.length > 6) return d.replace(/(\d{2})(\d{4})(\d{1,4})/, '($1) $2-$3');
+                    if (d.length > 2) return d.replace(/(\d{2})(\d{1,4})/, '($1) $2');
+                    if (d.length > 0) return '(' + d;
+                    return d;
+                }
+            };
+
+            document.querySelectorAll('input[data-mascara]').forEach(function (campo) {
+                const formatar = formatos[campo.dataset.mascara];
+                if (!formatar) return;
+                const aplicar = function () {
+                    campo.value = formatar(campo.value.replace(/\D/g, ''));
+                };
+                campo.addEventListener('input', aplicar);
+                aplicar();
+            });
+        })();
+    </script>
+
 </body>
 </html>
