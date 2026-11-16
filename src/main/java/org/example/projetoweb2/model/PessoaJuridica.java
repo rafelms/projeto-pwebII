@@ -2,9 +2,6 @@ package org.example.projetoweb2.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.PrimaryKeyJoinColumn;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 
 /**
  * Representa uma pessoa jurídica no sistema.
@@ -16,27 +13,19 @@ import jakarta.validation.constraints.Size;
  * a tabela 'pessoa' (superclasse).
  *
  * Hierarquia: Pessoa -> PessoaJuridica
+ *
+ * Não há formulário de pessoa jurídica: a clínica é cadastrada pelo import.sql
+ * e apenas lida (rodapé), por isso a classe não tem setters nem validações.
  */
 @Entity
 @PrimaryKeyJoinColumn(name = "id")
 public class PessoaJuridica extends Pessoa {
 
-    /** Razão social obrigatória, entre 3 e 150 caracteres. */
-    @NotBlank(message = "A razão social é obrigatória.")
-    @Size(min = 3, max = 150, message = "A razão social deve ter entre {min} e {max} caracteres.")
+    /** Razão social da clínica, exibida no rodapé. */
     private String razaoSocial;
 
-    /** CNPJ obrigatório no formato 99.999.999/9999-99. */
-    @NotBlank(message = "O CNPJ é obrigatório.")
-    @Pattern(regexp = "\\d{2}\\.\\d{3}\\.\\d{3}/\\d{4}-\\d{2}",
-            message = "O CNPJ deve estar no formato 99.999.999/9999-99.")
+    /** CNPJ no formato 99.999.999/9999-99. */
     private String cnpj;
-
-    /**
-     * Construtor padrão exigido pelo JPA.
-     */
-    public PessoaJuridica() {
-    }
 
     /**
      * Retorna a razão social da pessoa jurídica.
@@ -48,29 +37,11 @@ public class PessoaJuridica extends Pessoa {
     }
 
     /**
-     * Define a razão social da pessoa jurídica.
-     *
-     * @param razaoSocial nova razão social
-     */
-    public void setRazaoSocial(String razaoSocial) {
-        this.razaoSocial = razaoSocial;
-    }
-
-    /**
      * Retorna o CNPJ da pessoa jurídica.
      *
      * @return cnpj da empresa
      */
     public String getCnpj() {
         return cnpj;
-    }
-
-    /**
-     * Define o CNPJ da pessoa jurídica.
-     *
-     * @param cnpj novo CNPJ
-     */
-    public void setCnpj(String cnpj) {
-        this.cnpj = cnpj;
     }
 }

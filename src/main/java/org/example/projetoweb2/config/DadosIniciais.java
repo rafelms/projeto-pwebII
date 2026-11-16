@@ -1,6 +1,6 @@
 package org.example.projetoweb2.config;
 
-import org.example.projetoweb2.model.Pessoa;
+import org.example.projetoweb2.model.Papel;
 import org.example.projetoweb2.model.Perfil;
 import org.example.projetoweb2.model.Usuario;
 import org.example.projetoweb2.repository.MedicoRepository;
@@ -51,19 +51,21 @@ public class DadosIniciais implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        // Perfis gravados SEM o prefixo ROLE_
-        Perfil admin = perfilRepository.save(new Perfil("ADMIN"));
-        Perfil recepcao = perfilRepository.save(new Perfil("RECEPCAO"));
-        Perfil medico = perfilRepository.save(new Perfil("MEDICO"));
-        Perfil paciente = perfilRepository.save(new Perfil("PACIENTE"));
+        // Um perfil para cada valor do enum Papel (gravado SEM o prefixo ROLE_)
+        Perfil admin = perfilRepository.save(new Perfil(Papel.ADMIN));
+        Perfil recepcao = perfilRepository.save(new Perfil(Papel.RECEPCAO));
+        Perfil medico = perfilRepository.save(new Perfil(Papel.MEDICO));
+        Perfil paciente = perfilRepository.save(new Perfil(Papel.PACIENTE));
 
         // Funcionários: contas sem pessoa vinculada
         usuarioRepository.save(criarUsuario("admin", "admin", admin));
         usuarioRepository.save(criarUsuario("recepcao", "123", recepcao));
 
-        // Pessoas: a conta é salva junto com a pessoa (cascade = ALL em Pessoa.usuario)
-        medicoRepository.findById(4L).ifPresent(m -> vincular(m, criarUsuario("medico", "123", medico)));
-        pacienteRepository.findById(1L).ifPresent(p -> vincular(p, criarUsuario("paciente", "123", paciente)));
+        // Pessoas: a conta é salva junto com a pessoa (cascade = ALL em Pessoa.usuario).
+        // Como run() é @Transactional, a pessoa buscada está sendo gerenciada pelo JPA
+        // e a alteração é gravada ao final da transação.
+        medicoRepository.findById(4L).ifPresent(m -> m.setUsuario(criarUsuario("medico", "123", medico)));
+        pacienteRepository.findById(1L).ifPresent(p -> p.setUsuario(criarUsuario("paciente", "123", paciente)));
     }
 
     /**
@@ -73,13 +75,5 @@ public class DadosIniciais implements CommandLineRunner {
         Usuario usuario = new Usuario(login, passwordEncoder.encode(senha));
         usuario.adicionarPerfil(perfil);
         return usuario;
-    }
-
-    /**
-     * Associa a conta à pessoa. Como o método run() é @Transactional, a pessoa
-     * está sendo gerenciada pelo JPA e a alteração é gravada ao final da transação.
-     */
-    private void vincular(Pessoa pessoa, Usuario usuario) {
-        pessoa.setUsuario(usuario);
     }
 }

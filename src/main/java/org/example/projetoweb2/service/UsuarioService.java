@@ -1,6 +1,7 @@
 package org.example.projetoweb2.service;
 
 import org.example.projetoweb2.dto.AlterarSenha;
+import org.example.projetoweb2.model.Papel;
 import org.example.projetoweb2.model.Perfil;
 import org.example.projetoweb2.model.Usuario;
 import org.example.projetoweb2.repository.PerfilRepository;
@@ -20,9 +21,6 @@ import org.springframework.validation.BindingResult;
 @Service
 public class UsuarioService {
 
-    /** Tamanho mínimo da senha digitada no formulário. */
-    private static final int SENHA_MINIMA = 3;
-
     private final UsuarioRepository usuarioRepository;
 
     private final PerfilRepository perfilRepository;
@@ -37,34 +35,26 @@ public class UsuarioService {
     }
 
     /**
-     * Valida o login e a senha digitados no formulário.
+     * Regras da conta que dependem do banco (o formato do login e o tamanho da senha
+     * já foram validados pelas anotações do formulário).
      * Os erros são adicionados ao BindingResult e exibidos no próprio formulário.
      *
      * - login: não pode pertencer a outra conta;
      * - senha: obrigatória ao criar a conta; na edição, em branco significa "manter a atual".
+     *   Senha em branco chega aqui como null (GlobalBindingAdvice).
      *
-     * @param formulario usuário e senha digitados
+     * @param login      usuário digitado (campo "usuario" do formulário)
+     * @param senha      senha digitada (campo "senha" do formulário)
      * @param contaAtual conta já gravada da pessoa (null se ainda não tiver conta)
      * @param result     resultado da validação do formulário
      */
-    public void validar(Usuario formulario, Usuario contaAtual, BindingResult result) {
-        if (!result.hasFieldErrors("usuario.usuario")) {
-            boolean loginEmUso = usuarioRepository.findByUsuario(formulario.getUsuario())
-                    .filter(outro -> contaAtual == null || !outro.getId().equals(contaAtual.getId()))
-                    .isPresent();
-            if (loginEmUso) {
-                result.rejectValue("usuario.usuario", "usuario.duplicado", "Este usuário já está em uso.");
-            }
+    public void validar(String login, String senha, Usuario contaAtual, BindingResult result) {
+        Long idDaConta = contaAtual != null ? contaAtual.getId() : null;
+        if (!result.hasFieldErrors("usuario") && usuarioRepository.loginEmUso(login, idDaConta)) {
+            result.rejectValue("usuario", "usuario.duplicado", "Este usuário já está em uso.");
         }
-
-        String senha = formulario.getSenha();
-        boolean senhaEmBranco = senha == null || senha.isBlank();
-
-        if (contaAtual == null && senhaEmBranco) {
-            result.rejectValue("usuario.senha", "senha.obrigatoria", "A senha é obrigatória.");
-        } else if (!senhaEmBranco && senha.length() < SENHA_MINIMA) {
-            result.rejectValue("usuario.senha", "senha.curta",
-                    "A senha deve ter no mínimo " + SENHA_MINIMA + " caracteres.");
+        if (contaAtual == null && senha == null) {
+            result.rejectValue("senha", "senha.obrigatoria", "A senha é obrigatória.");
         }
     }
 
@@ -72,29 +62,30 @@ public class UsuarioService {
      * Monta a conta que será gravada junto com a pessoa.
      *
      * - Pessoa SEM conta: cria um Usuario novo, com a senha codificada (BCrypt)
-     *   e o perfil inicial (ex.: PACIENTE ou MEDICO).
+     *   e o perfil inicial (PACIENTE ou MEDICO).
      * - Pessoa COM conta: atualiza o login e, se informada, a senha; os perfis são mantidos.
      *
-     * A conta atual é sempre buscada no banco (e não pelo id vindo do formulário),
-     * para que ninguém altere a conta de outra pessoa manipulando o HTML.
+     * A conta atual vem sempre da pessoa buscada no banco (e nunca de um id enviado
+     * pelo formulário), para que ninguém altere a conta de outra pessoa manipulando o HTML.
      *
-     * @param formulario    usuário e senha digitados
+     * @param login         usuário digitado
+     * @param senha         senha digitada (null = manter a atual)
      * @param contaAtual    conta já gravada da pessoa (null se ainda não tiver conta)
-     * @param perfilInicial nome do perfil atribuído a uma conta nova
+     * @param perfilInicial papel atribuído a uma conta nova
      * @return conta pronta para ser gravada
      */
-    public Usuario prepararConta(Usuario formulario, Usuario contaAtual, String perfilInicial) {
+    public Usuario prepararConta(String login, String senha, Usuario contaAtual, Papel perfilInicial) {
         if (contaAtual == null) {
-            Usuario nova = new Usuario(formulario.getUsuario(), passwordEncoder.encode(formulario.getSenha()));
+            Usuario nova = new Usuario(login, passwordEncoder.encode(senha));
             Perfil perfil = perfilRepository.findByNome(perfilInicial)
                     .orElseThrow(() -> new IllegalStateException("Perfil não cadastrado: " + perfilInicial));
             nova.adicionarPerfil(perfil);
             return nova;
         }
 
-        contaAtual.setUsuario(formulario.getUsuario());
-        if (formulario.getSenha() != null && !formulario.getSenha().isBlank()) {
-            contaAtual.setSenha(passwordEncoder.encode(formulario.getSenha()));
+        contaAtual.setUsuario(login);
+        if (senha != null) {
+            contaAtual.setSenha(passwordEncoder.encode(senha));
         }
         return contaAtual;
     }
@@ -106,6 +97,9 @@ public class UsuarioService {
      *   o hash do BCrypt não pode ser "desfeito", só comparado;
      * - a nova senha e a confirmação precisam ser iguais.
      * Se houver erro, ele é registrado no BindingResult e a senha não é alterada.
+     *
+     * Como o método é @Transactional, o usuário buscado está sendo gerenciado pelo JPA
+     * e a nova senha é gravada ao final da transação, sem precisar chamar save().
      *
      * @param login  login do usuário autenticado
      * @param dados  senhas digitadas no formulário
@@ -127,6 +121,5 @@ public class UsuarioService {
         }
 
         usuario.setSenha(passwordEncoder.encode(dados.getNovaSenha()));
-        usuarioRepository.save(usuario);
     }
 }

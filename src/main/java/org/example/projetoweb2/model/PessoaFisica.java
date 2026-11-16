@@ -3,9 +3,6 @@ package org.example.projetoweb2.model;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.PrimaryKeyJoinColumn;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 
 /**
  * Representa uma pessoa física no sistema.
@@ -22,27 +19,16 @@ import jakarta.validation.constraints.Size;
 @PrimaryKeyJoinColumn(name = "id")
 public class PessoaFisica extends Pessoa {
 
-    /** Nome obrigatório, entre 3 e 100 caracteres. */
-    @NotBlank(message = "O nome é obrigatório.")
-    @Size(min = 3, max = 100, message = "O nome deve ter entre {min} e {max} caracteres.")
+    /** Nome da pessoa (validado no PessoaFisicaForm). */
     private String nome;
 
     /**
-     * CPF obrigatório no formato 999.999.999-99.
+     * CPF no formato 999.999.999-99 (validado no PessoaFisicaForm).
      * É único entre TODAS as pessoas físicas (pacientes e médicos): unique = true no banco
      * e verificação no controller, para mostrar a mensagem no formulário.
      */
-    @NotBlank(message = "O CPF é obrigatório.")
-    @Pattern(regexp = "\\d{3}\\.\\d{3}\\.\\d{3}-\\d{2}",
-            message = "O CPF deve estar no formato 999.999.999-99.")
     @Column(unique = true)
     private String cpf;
-
-    /**
-     * Construtor padrão exigido pelo JPA.
-     */
-    public PessoaFisica() {
-    }
 
     /**
      * Retorna o nome da pessoa física.

@@ -6,14 +6,13 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 /**
- * Controller global para PessoaJuridica.
+ * Disponibiliza os dados da clínica (PessoaJuridica) para todas as views.
  *
- * Utiliza @ControllerAdvice para disponibilizar os dados de contato
- * da clínica (pessoa jurídica) em todas as views do sistema,
- * permitindo que o rodapé exiba essas informações automaticamente.
+ * Utiliza @ControllerAdvice para que o rodapé exiba os dados de contato
+ * da clínica em todas as telas, sem que cada controller precise carregá-los.
  */
 @ControllerAdvice
-public class PessoaJuridicaController {
+public class ClinicaAdvice {
 
     private final PessoaJuridicaRepository repository;
 
@@ -22,7 +21,7 @@ public class PessoaJuridicaController {
      *
      * @param repository repositório de pessoas jurídicas
      */
-    public PessoaJuridicaController(PessoaJuridicaRepository repository) {
+    public ClinicaAdvice(PessoaJuridicaRepository repository) {
         this.repository = repository;
     }
 
@@ -34,9 +33,6 @@ public class PessoaJuridicaController {
      */
     @ModelAttribute("clinica")
     public PessoaJuridica carregarClinica() {
-        return repository.findAll()
-                .stream()
-                .findFirst()
-                .orElse(null);
+        return repository.findFirstByOrderByIdAsc().orElse(null);
     }
 }

@@ -1,6 +1,7 @@
 package org.example.projetoweb2.controller;
 
 import jakarta.validation.Valid;
+import org.example.projetoweb2.dto.ConsultaForm;
 import org.example.projetoweb2.dto.FiltroConsulta;
 import org.example.projetoweb2.model.Consulta;
 import org.example.projetoweb2.model.Medico;
@@ -42,6 +43,10 @@ import java.util.List;
  *
  * O HTML só envia GET e POST; para PUT e DELETE o Thymeleaf (th:method) adiciona
  * um campo oculto "_method", que o HiddenHttpMethodFilter do Spring converte no verbo certo.
+ *
+ * O formulário é ligado a um DTO (ConsultaForm), e não à entidade Consulta:
+ * o controller valida o DTO e só depois copia os dados para a entidade.
+ * No model o DTO continua com o nome "consulta", usado pelo template.
  */
 @Controller
 @RequestMapping("/consultas")
@@ -66,6 +71,8 @@ public class ConsultaController {
 
     /**
      * Lista as consultas, aplicando o filtro se for válido.
+     * Com filtro inválido, as mensagens aparecem no formulário de busca e a lista completa
+     * é mostrada — pela mesma consulta do filtro (sem parâmetros), para manter a ordem por data e horário.
      *
      * @param filtro objeto com os parâmetros de busca (query string)
      * @param result resultado da validação do filtro
@@ -74,12 +81,9 @@ public class ConsultaController {
      */
     @GetMapping
     public String listar(@Valid @ModelAttribute("filtro") FiltroConsulta filtro, BindingResult result, Model model) {
-        if (result.hasErrors()) {
-            model.addAttribute("consultas", consultaRepository.findAll());
-        } else {
-            model.addAttribute("consultas", consultaRepository.filtrar(filtro.getDataInicio(), filtro.getDataFim(),
-                    filtro.getPacienteId(), filtro.getMedicoId(), filtro.getValorMinimo()));
-        }
+        FiltroConsulta aplicado = result.hasErrors() ? new FiltroConsulta() : filtro;
+        model.addAttribute("consultas", consultaRepository.filtrar(aplicado.getDataInicio(), aplicado.getDataFim(),
+                aplicado.getPacienteId(), aplicado.getMedicoId(), aplicado.getValorMinimo()));
         carregarListas(model);
         return "consulta/list";
     }
@@ -95,11 +99,9 @@ public class ConsultaController {
      */
     @GetMapping("/nova")
     public String nova(@RequestParam(required = false) Long pacienteId, Model model) {
-        Consulta consulta = new Consulta();
-        if (pacienteId != null) {
-            pacienteRepository.findById(pacienteId).ifPresent(consulta::setPaciente);
-        }
-        model.addAttribute("consulta", consulta);
+        ConsultaForm form = new ConsultaForm();
+        form.setPacienteId(pacienteId);
+        model.addAttribute("consulta", form);
         carregarListas(model);
         return "consulta/form";
     }
@@ -119,30 +121,39 @@ public class ConsultaController {
             redirectAttributes.addFlashAttribute("erro", "Consulta não encontrada: " + id);
             return "redirect:/consultas";
         }
-        model.addAttribute("consulta", consulta);
+        ConsultaForm form = new ConsultaForm();
+        form.carregar(consulta);
+        model.addAttribute("consulta", form);
         carregarListas(model);
         return "consulta/form";
     }
 
     /**
-     * Cadastra uma nova consulta (POST). Toda consulta nova começa como AGENDADA.
+     * Cadastra uma nova consulta (POST). Toda consulta nova começa como AGENDADA,
+     * mesmo que o formulário seja adulterado para enviar outra situação.
      */
     @PostMapping
-    public String cadastrar(@Valid @ModelAttribute("consulta") Consulta consulta, BindingResult result,
+    public String cadastrar(@Valid @ModelAttribute("consulta") ConsultaForm form, BindingResult result,
                             Model model, RedirectAttributes redirectAttributes) {
-        consulta.setId(null);
-        consulta.setStatus(StatusConsulta.AGENDADA);
-        return salvar(consulta, result, model, redirectAttributes);
+        form.setId(null);
+        form.setStatus(StatusConsulta.AGENDADA);
+        return salvar(new Consulta(), form, result, model, redirectAttributes);
     }
 
     /**
-     * Altera uma consulta existente (PUT). O id vem da URL, e não do formulário.
+     * Altera uma consulta existente (PUT). O id vem da URL, e não do formulário,
+     * e a consulta é sempre buscada no banco: se não existir, volta à listagem com a mensagem de erro.
      */
     @PutMapping("/{id}")
-    public String alterar(@PathVariable Long id, @Valid @ModelAttribute("consulta") Consulta consulta,
+    public String alterar(@PathVariable Long id, @Valid @ModelAttribute("consulta") ConsultaForm form,
                           BindingResult result, Model model, RedirectAttributes redirectAttributes) {
-        consulta.setId(id);
-        return salvar(consulta, result, model, redirectAttributes);
+        Consulta consulta = consultaRepository.findById(id).orElse(null);
+        if (consulta == null) {
+            redirectAttributes.addFlashAttribute("erro", "Consulta não encontrada: " + id);
+            return "redirect:/consultas";
+        }
+        form.setId(id);
+        return salvar(consulta, form, result, model, redirectAttributes);
     }
 
     /**
@@ -165,16 +176,33 @@ public class ConsultaController {
 
     /**
      * Validações comuns ao cadastro e à alteração; se tudo estiver certo, grava a consulta.
+     * A entidade só é alterada depois que todas as validações passam.
+     *
+     * @param consulta entidade nova (cadastro) ou buscada no banco (alteração)
+     * @param form     dados digitados
      */
-    private String salvar(Consulta consulta, BindingResult result, Model model, RedirectAttributes redirectAttributes) {
-        validarPacienteEMedico(consulta, result);
-        validarAgenda(consulta, result);
+    private String salvar(Consulta consulta, ConsultaForm form, BindingResult result,
+                          Model model, RedirectAttributes redirectAttributes) {
+        // O formulário envia só o id; se o id não existir no banco, o erro vai para o campo
+        Paciente paciente = form.getPacienteId() == null ? null
+                : pacienteRepository.findById(form.getPacienteId()).orElse(null);
+        if (paciente == null && !result.hasFieldErrors("pacienteId")) {
+            result.rejectValue("pacienteId", "paciente.invalido", "Selecione um paciente.");
+        }
+        Medico medico = form.getMedicoId() == null ? null
+                : medicoRepository.findById(form.getMedicoId()).orElse(null);
+        if (medico == null && !result.hasFieldErrors("medicoId")) {
+            result.rejectValue("medicoId", "medico.invalido", "Selecione um médico.");
+        }
+
+        validarAgenda(form, result);
 
         if (result.hasErrors()) {
             carregarListas(model);
             return "consulta/form";
         }
 
+        form.aplicar(consulta, paciente, medico);
         consultaRepository.save(consulta);
         redirectAttributes.addFlashAttribute("sucesso", "Consulta salva com sucesso!");
         return "redirect:/consultas";
@@ -192,26 +220,6 @@ public class ConsultaController {
     }
 
     /**
-     * Troca o paciente e o médico vindos do formulário (só com o id) pelos objetos do banco.
-     * Se o id não for informado ou não existir, registra o erro no campo correspondente.
-     */
-    private void validarPacienteEMedico(Consulta consulta, BindingResult result) {
-        Long pacienteId = consulta.getPaciente() != null ? consulta.getPaciente().getId() : null;
-        Paciente paciente = pacienteId != null ? pacienteRepository.findById(pacienteId).orElse(null) : null;
-        if (paciente == null) {
-            result.rejectValue("paciente", "paciente.obrigatorio", "Selecione um paciente.");
-        }
-        consulta.setPaciente(paciente);
-
-        Long medicoId = consulta.getMedico() != null ? consulta.getMedico().getId() : null;
-        Medico medico = medicoId != null ? medicoRepository.findById(medicoId).orElse(null) : null;
-        if (medico == null) {
-            result.rejectValue("medico", "medico.obrigatorio", "Selecione um médico.");
-        }
-        consulta.setMedico(medico);
-    }
-
-    /**
      * Regras de agenda:
      * - a clínica atende de segunda a sexta, nos horários da lista;
      * - consulta agendada/confirmada precisa estar no futuro;
@@ -220,23 +228,23 @@ public class ConsultaController {
      * - o médico e o paciente não podem ter duas consultas no mesmo horário
      *   (consultas canceladas não ocupam o horário).
      */
-    private void validarAgenda(Consulta consulta, BindingResult result) {
+    private void validarAgenda(ConsultaForm form, BindingResult result) {
         if (result.hasFieldErrors("data") || result.hasFieldErrors("horario") || result.hasFieldErrors("status")) {
             return;
         }
 
-        DayOfWeek dia = consulta.getData().getDayOfWeek();
+        DayOfWeek dia = form.getData().getDayOfWeek();
         if (dia == DayOfWeek.SATURDAY || dia == DayOfWeek.SUNDAY) {
             result.rejectValue("data", "data.fimDeSemana", "A clínica atende de segunda a sexta-feira.");
             return;
         }
-        if (!HORARIOS.contains(consulta.getHorario())) {
+        if (!HORARIOS.contains(form.getHorario())) {
             result.rejectValue("horario", "horario.invalido", "Escolha um dos horários da lista.");
             return;
         }
 
-        boolean noFuturo = LocalDateTime.of(consulta.getData(), consulta.getHorario()).isAfter(LocalDateTime.now());
-        StatusConsulta status = consulta.getStatus();
+        boolean noFuturo = LocalDateTime.of(form.getData(), form.getHorario()).isAfter(LocalDateTime.now());
+        StatusConsulta status = form.getStatus();
 
         if (status.isEmAberto() && !noFuturo) {
             result.rejectValue("data", "data.passada",
@@ -252,12 +260,12 @@ public class ConsultaController {
         if (status == StatusConsulta.CANCELADA) {
             return;
         }
-        if (consulta.getMedico() != null && consultaRepository.medicoOcupado(
-                consulta.getMedico().getId(), consulta.getData(), consulta.getHorario(), consulta.getId())) {
+        if (form.getMedicoId() != null && consultaRepository.medicoOcupado(
+                form.getMedicoId(), form.getData(), form.getHorario(), form.getId())) {
             result.rejectValue("horario", "horario.medicoOcupado", "O médico já possui uma consulta neste horário.");
         }
-        if (consulta.getPaciente() != null && consultaRepository.pacienteOcupado(
-                consulta.getPaciente().getId(), consulta.getData(), consulta.getHorario(), consulta.getId())) {
+        if (form.getPacienteId() != null && consultaRepository.pacienteOcupado(
+                form.getPacienteId(), form.getData(), form.getHorario(), form.getId())) {
             result.rejectValue("horario", "horario.pacienteOcupado", "O paciente já possui uma consulta neste horário.");
         }
     }

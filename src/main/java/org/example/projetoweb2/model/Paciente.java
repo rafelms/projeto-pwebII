@@ -28,17 +28,7 @@ public class Paciente extends PessoaFisica {
     @OneToMany(mappedBy = "paciente")
     private List<Consulta> consultaList = new ArrayList<>();
 
-    /**
-     * Construtor padrão exigido pelo JPA.
-     */
-    public Paciente() {
-    }
-
     public List<Consulta> getConsultaList() {
         return consultaList;
-    }
-
-    public void setConsultaList(List<Consulta> consultaList) {
-        this.consultaList = consultaList;
     }
 }

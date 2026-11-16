@@ -2,7 +2,9 @@ package org.example.projetoweb2.controller;
 
 import jakarta.validation.Valid;
 import org.example.projetoweb2.dto.FiltroPessoa;
+import org.example.projetoweb2.dto.MedicoForm;
 import org.example.projetoweb2.model.Medico;
+import org.example.projetoweb2.model.Papel;
 import org.example.projetoweb2.model.Usuario;
 import org.example.projetoweb2.repository.ConsultaRepository;
 import org.example.projetoweb2.repository.MedicoRepository;
@@ -30,6 +32,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  * - GET    /medicos/{id}/editar  formulário de edição
  * - PUT    /medicos/{id}         altera
  * - DELETE /medicos/{id}         exclui
+ *
+ * O formulário é ligado a um DTO (MedicoForm), e não à entidade Medico:
+ * o controller valida o DTO e só depois copia os dados para a entidade.
+ * No model o DTO continua com o nome "medico", usado pelo template.
  */
 @Controller
 @RequestMapping("/medicos")
@@ -77,9 +83,7 @@ public class MedicoController {
      */
     @GetMapping("/novo")
     public String novo(Model model) {
-        Medico medico = new Medico();
-        medico.setUsuario(new Usuario()); // conta vazia para os campos usuário/senha do formulário
-        model.addAttribute("medico", medico);
+        model.addAttribute("medico", new MedicoForm());
         return "medico/form";
     }
 
@@ -98,10 +102,10 @@ public class MedicoController {
             redirectAttributes.addFlashAttribute("erro", "Médico não encontrado: " + id);
             return "redirect:/medicos";
         }
-        if (medico.getUsuario() == null) {
-            medico.setUsuario(new Usuario()); // médico ainda sem conta: será criada ao salvar
-        }
-        model.addAttribute("medico", medico);
+        MedicoForm form = new MedicoForm();
+        form.carregar(medico);
+        model.addAttribute("medico", form);
+        model.addAttribute("temConta", medico.getUsuario() != null);
         return "medico/form";
     }
 
@@ -109,20 +113,26 @@ public class MedicoController {
      * Cadastra um novo médico (POST).
      */
     @PostMapping
-    public String cadastrar(@Valid @ModelAttribute("medico") Medico medico, BindingResult result,
-                            RedirectAttributes redirectAttributes) {
-        medico.setId(null);
-        return salvar(medico, result, redirectAttributes);
+    public String cadastrar(@Valid @ModelAttribute("medico") MedicoForm form, BindingResult result,
+                            Model model, RedirectAttributes redirectAttributes) {
+        form.setId(null);
+        return salvar(new Medico(), form, result, model, redirectAttributes);
     }
 
     /**
-     * Altera um médico existente (PUT). O id vem da URL, e não do formulário.
+     * Altera um médico existente (PUT). O id vem da URL, e não do formulário,
+     * e o médico é sempre buscado no banco: se não existir, volta à listagem com a mensagem de erro.
      */
     @PutMapping("/{id}")
-    public String alterar(@PathVariable Long id, @Valid @ModelAttribute("medico") Medico medico,
-                          BindingResult result, RedirectAttributes redirectAttributes) {
-        medico.setId(id);
-        return salvar(medico, result, redirectAttributes);
+    public String alterar(@PathVariable Long id, @Valid @ModelAttribute("medico") MedicoForm form,
+                          BindingResult result, Model model, RedirectAttributes redirectAttributes) {
+        Medico medico = repository.findById(id).orElse(null);
+        if (medico == null) {
+            redirectAttributes.addFlashAttribute("erro", "Médico não encontrado: " + id);
+            return "redirect:/medicos";
+        }
+        form.setId(id);
+        return salvar(medico, form, result, model, redirectAttributes);
     }
 
     /**
@@ -149,42 +159,37 @@ public class MedicoController {
     /**
      * Validações comuns ao cadastro e à alteração; se tudo estiver certo, grava o médico.
      *
+     * - @Valid (nos métodos acima) já aplicou as anotações do formulário;
      * - o CPF não pode pertencer a outra pessoa física (paciente ou médico);
      * - o CRM não pode pertencer a outro médico;
      * - o UsuarioService valida o login/senha e monta a conta: um médico novo recebe
      *   o perfil inicial MEDICO e a senha codificada em BCrypt.
+     *
+     * A entidade só é alterada depois que todas as validações passam.
+     *
+     * @param medico entidade nova (cadastro) ou buscada no banco (alteração)
+     * @param form   dados digitados
      */
-    private String salvar(Medico medico, BindingResult result, RedirectAttributes redirectAttributes) {
-        boolean novo = medico.getId() == null;
-
-        if (!result.hasFieldErrors("cpf")) {
-            boolean cpfDuplicado = novo
-                    ? pessoaFisicaRepository.existsByCpf(medico.getCpf())
-                    : pessoaFisicaRepository.existsByCpfAndIdNot(medico.getCpf(), medico.getId());
-            if (cpfDuplicado) {
-                result.rejectValue("cpf", "cpf.duplicado", "Já existe uma pessoa cadastrada com este CPF.");
-            }
+    private String salvar(Medico medico, MedicoForm form, BindingResult result,
+                          Model model, RedirectAttributes redirectAttributes) {
+        if (!result.hasFieldErrors("cpf") && pessoaFisicaRepository.cpfEmUso(form.getCpf(), medico.getId())) {
+            result.rejectValue("cpf", "cpf.duplicado", "Já existe uma pessoa cadastrada com este CPF.");
         }
-
-        if (!result.hasFieldErrors("crm")) {
-            boolean crmDuplicado = novo
-                    ? repository.existsByCrm(medico.getCrm())
-                    : repository.existsByCrmAndIdNot(medico.getCrm(), medico.getId());
-            if (crmDuplicado) {
-                result.rejectValue("crm", "crm.duplicado", "Já existe um médico cadastrado com este CRM.");
-            }
+        if (!result.hasFieldErrors("crm") && repository.crmEmUso(form.getCrm(), medico.getId())) {
+            result.rejectValue("crm", "crm.duplicado", "Já existe um médico cadastrado com este CRM.");
         }
 
         // Conta já gravada no banco (null para médico novo ou ainda sem conta)
-        Usuario contaAtual = novo ? null
-                : repository.findById(medico.getId()).map(Medico::getUsuario).orElse(null);
-        usuarioService.validar(medico.getUsuario(), contaAtual, result);
+        Usuario contaAtual = medico.getUsuario();
+        usuarioService.validar(form.getUsuario(), form.getSenha(), contaAtual, result);
 
         if (result.hasErrors()) {
+            model.addAttribute("temConta", contaAtual != null);
             return "medico/form";
         }
 
-        medico.setUsuario(usuarioService.prepararConta(medico.getUsuario(), contaAtual, "MEDICO"));
+        form.aplicar(medico);
+        medico.setUsuario(usuarioService.prepararConta(form.getUsuario(), form.getSenha(), contaAtual, Papel.MEDICO));
         repository.save(medico);
         redirectAttributes.addFlashAttribute("sucesso", "Médico salvo com sucesso!");
         return "redirect:/medicos";

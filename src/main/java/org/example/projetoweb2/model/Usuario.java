@@ -8,9 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,16 +29,13 @@ public class Usuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Nome de login: obrigatório, único, sem espaços. */
-    @NotBlank(message = "O usuário é obrigatório.")
-    @Size(min = 3, max = 50, message = "O usuário deve ter entre {min} e {max} caracteres.")
-    @Pattern(regexp = "[a-zA-Z0-9._-]*", message = "O usuário não pode ter espaços nem acentos.")
+    /** Nome de login: obrigatório e único (o formato é validado no PessoaFisicaForm). */
     @Column(nullable = false, unique = true, length = 50)
     private String usuario;
 
     /**
-     * Hash da senha. Não tem anotação de validação porque o valor gravado é o hash;
-     * a senha digitada no formulário é validada no UsuarioService.
+     * Hash da senha. O valor gravado é sempre o hash; a senha digitada chega
+     * pelos formulários (PessoaFisicaForm e AlterarSenha), onde é validada.
      * O tamanho 100 deixa margem acima dos 60 caracteres do BCrypt.
      */
     @Column(nullable = false, length = 100)
@@ -88,10 +82,6 @@ public class Usuario {
 
     public Long getId() {
         return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getUsuario() {

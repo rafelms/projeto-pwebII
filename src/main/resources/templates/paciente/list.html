@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--
+<!--/*
     paciente/list.html - Página de Listagem de Pacientes
 
     Esta página "decora" o layout.html usando layout:decorate="~{layout}",
@@ -16,43 +16,42 @@
     - Botão "Novo Paciente" para redirecionar ao formulário de cadastro
     - Botões de ação por registro: Agendar, Editar, Excluir (DELETE, com confirmação) e Ver Consultas
     - Modais Bootstrap para visualizar as consultas de cada paciente
--->
+*/-->
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout}">
-<!-- layout:decorate="~{layout}" indica que esta página herda o layout.html -->
+<!--/* layout:decorate="~{layout}" indica que esta página herda o layout.html */-->
 <head>
-    <!-- O título será combinado com o padrão do layout: "Pacientes - Sistema Médico" -->
     <title>Pacientes</title>
 </head>
 <body>
 
-<!--
+<!--/*
     layout:fragment="conteudo" define o bloco que substituirá a área
     de conteúdo correspondente no layout.html.
     Todo o HTML dentro desta div será injetado no layout mestre.
--->
+*/-->
 <div layout:fragment="conteudo">
 
     <h2>Lista de Pacientes</h2>
 
-    <!-- Botão para criar novo paciente — redireciona para /pacientes/novo -->
+    <!--/* Botão para criar novo paciente — redireciona para /pacientes/novo */-->
     <a th:href="@{/pacientes/novo}" class="btn btn-success mb-3"
        sec:authorize="hasAnyRole('ADMIN', 'RECEPCAO')">
         <i class="bi bi-plus-circle"></i> Novo Paciente
     </a>
 
-    <!--
+    <!--/*
         Filtro por nome (GET /pacientes?nome=...).
         th:object="${filtro}" liga o formulário ao FiltroPessoa validado com @Valid
         no controller; th:errors exibe a mensagem caso a busca seja inválida.
-    -->
+    */-->
     <form th:action="@{/pacientes}" th:object="${filtro}" method="get" class="row g-2 mb-3" novalidate>
         <div class="col-md-6">
             <input type="text" class="form-control" th:field="*{nome}" th:errorclass="is-invalid"
                    placeholder="Buscar por nome">
-            <div class="invalid-feedback" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}"></div>
+            <div class="invalid-feedback" th:errors="*{nome}"></div>
         </div>
         <div class="col-auto">
             <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Filtrar</button>
@@ -60,9 +59,9 @@
         </div>
     </form>
 
-    <!-- Tabela estilizada com Bootstrap: listras alternadas (table-striped) e hover -->
+    <!--/* Tabela estilizada com Bootstrap: listras alternadas (table-striped) e hover */-->
     <table class="table table-striped table-hover">
-        <!-- Cabeçalho da tabela com fundo azul (table-primary) -->
+        <!--/* Cabeçalho da tabela com fundo azul (table-primary) */-->
         <thead class="table-primary">
         <tr>
             <th>ID</th>
@@ -74,42 +73,42 @@
         </tr>
         </thead>
         <tbody>
-        <!--
+        <!--/*
             th:each="p : ${pacientes}" itera sobre a lista de pacientes
             recebida do controller, gerando uma linha <tr> para cada paciente.
-        -->
+        */-->
         <tr th:each="p : ${pacientes}">
-            <!-- th:text exibe o valor do atributo correspondente do objeto Paciente -->
+            <!--/* th:text exibe o valor do atributo correspondente do objeto Paciente */-->
             <td th:text="${p.id}"></td>
             <td th:text="${p.nome}"></td>
             <td th:text="${p.cpf}"></td>
             <td th:text="${p.email}"></td>
             <td th:text="${p.telefone}"></td>
             <td>
-                <!-- Agendar: abre a nova consulta com este paciente já selecionado -->
+                <!--/* Agendar: abre a nova consulta com este paciente já selecionado */-->
                 <a th:href="@{/consultas/nova(pacienteId=${p.id})}" class="btn btn-success btn-sm"
                    sec:authorize="hasAnyRole('ADMIN', 'RECEPCAO')">
                     <i class="bi bi-calendar-plus"></i> Agendar
                 </a>
-                <!-- Botão Editar — abre o formulário de edição (GET /pacientes/{id}/editar) -->
+                <!--/* Botão Editar — abre o formulário de edição (GET /pacientes/{id}/editar) */-->
                 <a th:href="@{/pacientes/{id}/editar(id=${p.id})}" class="btn btn-warning btn-sm"
                    sec:authorize="hasAnyRole('ADMIN', 'RECEPCAO')">
                     <i class="bi bi-pencil"></i> Editar
                 </a>
-                <!--
+                <!--/*
                     Botão Excluir — envia DELETE /pacientes/{id}.
                     th:method="delete" gera o campo oculto "_method" e o th:action inclui o token CSRF.
-                -->
+                */-->
                 <form th:action="@{/pacientes/{id}(id=${p.id})}" th:method="delete" class="d-inline"
                       sec:authorize="hasRole('ADMIN')" onsubmit="return confirm('Deseja realmente excluir?')">
                     <button type="submit" class="btn btn-danger btn-sm">
                         <i class="bi bi-trash"></i> Excluir
                     </button>
                 </form>
-                <!--
+                <!--/*
                     Botão Ver Consultas — abre o modal Bootstrap correspondente ao paciente.
                     th:data-bs-target gera o seletor do modal dinamicamente: "#modalPaciente-1", etc.
-                -->
+                */-->
                 <button class="btn btn-info btn-sm" type="button"
                         th:data-bs-target="'#modalPaciente-' + ${p.id}"
                         data-bs-toggle="modal">
@@ -120,30 +119,31 @@
         </tbody>
     </table>
 
-    <!--
+    <!--/*
         Modais Bootstrap para exibir as consultas de cada paciente.
         Um modal é gerado para cada paciente usando th:each.
         O ID do modal é dinâmico (th:id) para corresponder ao data-bs-target do botão.
-    -->
+    */-->
     <div th:each="p : ${pacientes}">
         <div class="modal fade" th:id="'modalPaciente-' + ${p.id}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
-                    <!-- Cabeçalho do modal com fundo azul claro -->
+                    <!--/* Cabeçalho do modal com fundo azul claro */-->
                     <div class="modal-header bg-info text-white">
                         <h5 class="modal-title" th:text="'Consultas de ' + ${p.nome}"></h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
                     </div>
                     <div class="modal-body">
-                        <!--
+                        <!--/*
                             th:if verifica se o paciente não possui consultas.
-                            #lists.isEmpty() é uma utility do Thymeleaf para verificar listas vazias.
-                        -->
-                        <div th:if="${p.consultaList == null or #lists.isEmpty(p.consultaList)}">
+                            #lists.isEmpty() é uma utility do Thymeleaf para verificar listas vazias
+                            (a lista nunca é null: é inicializada na entidade).
+                        */-->
+                        <div th:if="${#lists.isEmpty(p.consultaList)}">
                             <p class="text-muted">Nenhuma consulta cadastrada.</p>
                         </div>
-                        <!-- th:unless é o oposto de th:if — exibe a tabela apenas se há consultas -->
-                        <table class="table table-sm" th:unless="${p.consultaList == null or #lists.isEmpty(p.consultaList)}">
+                        <!--/* th:unless é o oposto de th:if — exibe a tabela apenas se há consultas */-->
+                        <table class="table table-sm" th:unless="${#lists.isEmpty(p.consultaList)}">
                             <thead>
                             <tr>
                                 <th>Data</th>
@@ -153,14 +153,14 @@
                             </tr>
                             </thead>
                             <tbody>
-                            <!-- Itera sobre as consultas do paciente -->
+                            <!--/* Itera sobre as consultas do paciente */-->
                             <tr th:each="c : ${p.consultaList}">
-                                <!-- #temporals.format formata a data (LocalDate); o horário já vem como 09:00 -->
+                                <!--/* #temporals.format formata a data (LocalDate); o horário já vem como 09:00 */-->
                                 <td th:text="${#temporals.format(c.data, 'dd/MM/yyyy')} + ' ' + ${c.horario}"></td>
                                 <td th:text="${c.medico.nome}"></td>
                                 <td><span class="badge" th:classappend="${c.status.cor}" th:text="${c.status.descricao}"></span></td>
-                                <!-- #numbers.formatDecimal formata o valor com 2 casas decimais -->
-                                <td th:text="'R$ ' + ${#numbers.formatDecimal(c.valor, 1, 'POINT', 2, 'COMMA')}"></td>
+                                <!--/* #numbers.formatCurrency formata o valor como moeda (R$ 250,00), conforme o locale pt_BR */-->
+                                <td th:text="${#numbers.formatCurrency(c.valor)}"></td>
                             </tr>
                             </tbody>
                         </table>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--
+<!--/*
     header.html - Fragmento da Barra de Navegação (Navbar)
 
     Contém o fragment "header" que é reutilizado pelo layout.html
@@ -13,18 +13,18 @@
     - Brand: nome do sistema com ícone de hospital (Bootstrap Icons)
     - Links: Pacientes, Médicos e Consultas com ícones
     - Responsividade: navbar-expand-lg faz a navbar colapsar em telas menores
--->
-<!--
+*/-->
+<!--/*
     Integração com o Spring Security (thymeleaf-extras-springsecurity6):
     - sec:authorize="expressão" só renderiza o elemento se a expressão for verdadeira;
     - sec:authentication="name" exibe o nome do usuário logado.
     Ocultar um menu NÃO protege a URL: a proteção real está na SecurityConfiguration.
--->
+*/-->
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 
-<!--
+<!--/*
     th:fragment="header" define este bloco como fragment reutilizável.
     Classes Bootstrap utilizadas:
     - navbar: componente base de navegação
@@ -32,61 +32,67 @@
     - navbar-dark: texto claro para fundo escuro
     - bg-primary: fundo azul padrão do Bootstrap
     - shadow-sm: sombra sutil para dar profundidade visual
--->
+*/-->
 <nav th:fragment="header" class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
     <div class="container">
-        <!-- Brand (logotipo/nome do sistema) com link para a página inicial -->
+        <!--/* Brand (logotipo/nome do sistema) com link para a página inicial */-->
         <a class="navbar-brand fw-bold" th:href="@{/}">
             <i class="bi bi-hospital"></i> Sistema Médico
         </a>
 
-        <!-- Botão hambúrguer para telas menores — exibe o menu colapsado -->
+        <!--/* Botão hambúrguer para telas menores — exibe o menu colapsado */-->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navbarNav" aria-controls="navbarNav"
                 aria-expanded="false" aria-label="Alternar navegação">
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <!-- Menu de navegação colapsável — ms-auto alinha os itens à direita -->
+        <!--/* Menu de navegação colapsável — ms-auto alinha os itens à direita */-->
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
-                <!-- Listagens: apenas funcionários (o PACIENTE não vê estes links) -->
-                <!-- Link para a lista de pacientes -->
-                <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','RECEPCAO','MEDICO')">
-                    <a class="nav-link" th:href="@{/pacientes}">
-                        <i class="bi bi-people"></i> Pacientes
-                    </a>
-                </li>
-                <!-- Link para a lista de médicos -->
-                <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','RECEPCAO','MEDICO')">
-                    <a class="nav-link" th:href="@{/medicos}">
-                        <i class="bi bi-person-badge"></i> Médicos
-                    </a>
-                </li>
-                <!-- Link para a lista de consultas -->
-                <li class="nav-item" sec:authorize="hasAnyRole('ADMIN','RECEPCAO','MEDICO')">
-                    <a class="nav-link" th:href="@{/consultas}">
-                        <i class="bi bi-calendar-check"></i> Consultas
-                    </a>
-                </li>
-                <!-- Lista de usuários (contas do banco): visível apenas para o perfil ADMIN -->
+                <!--/*
+                    Listagens: apenas funcionários (o PACIENTE não vê estes links).
+                    th:block não gera nenhuma tag no HTML: serve só para aplicar
+                    o mesmo sec:authorize aos três links de uma vez.
+                */-->
+                <th:block sec:authorize="hasAnyRole('ADMIN','RECEPCAO','MEDICO')">
+                    <!--/* Link para a lista de pacientes */-->
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/pacientes}">
+                            <i class="bi bi-people"></i> Pacientes
+                        </a>
+                    </li>
+                    <!--/* Link para a lista de médicos */-->
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/medicos}">
+                            <i class="bi bi-person-badge"></i> Médicos
+                        </a>
+                    </li>
+                    <!--/* Link para a lista de consultas */-->
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/consultas}">
+                            <i class="bi bi-calendar-check"></i> Consultas
+                        </a>
+                    </li>
+                </th:block>
+                <!--/* Lista de usuários (contas do banco): visível apenas para o perfil ADMIN */-->
                 <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                     <a class="nav-link" th:href="@{/usuarios}">
                         <i class="bi bi-person-gear"></i> Usuários
                     </a>
                 </li>
-                <!-- Console do banco H2: visível apenas para o perfil ADMIN -->
+                <!--/* Console do banco H2: visível apenas para o perfil ADMIN */-->
                 <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                     <a class="nav-link" th:href="@{/h2-console}" target="_blank">
                         <i class="bi bi-database"></i> H2
                     </a>
                 </li>
 
-                <!--
+                <!--/*
                     Usuário logado: nome, perfil e botão Sair.
                     O logout é um formulário POST (e não um link GET) para que o
                     token CSRF seja enviado; th:action insere esse token automaticamente.
-                -->
+                */-->
                 <li class="nav-item dropdown ms-lg-3" sec:authorize="isAuthenticated()">
                     <a class="nav-link dropdown-toggle" href="#" role="button"
                        data-bs-toggle="dropdown" aria-expanded="false">

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--
+<!--/*
     footer.html - Fragmento do Rodapé
 
     Contém o fragment "footer" que é incluído no layout.html
@@ -10,14 +10,14 @@
     Isso atende à exigência de que o footer, por ser um elemento estático,
     seja definido uma única vez e reutilizado automaticamente em todas as telas.
 
-    A variável ${clinica} é disponibilizada globalmente pelo PessoaJuridicaController
-    (anotado com @ControllerAdvice e @ModelAttribute("clinica")), tornando os dados
+    A variável ${clinica} é disponibilizada globalmente pela classe ClinicaAdvice
+    (anotada com @ControllerAdvice e @ModelAttribute("clinica")), tornando os dados
     acessíveis em todas as views sem necessidade de adicioná-los em cada controller.
--->
+*/-->
 <html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<!--
+<!--/*
     th:fragment="footer" define este bloco como fragment reutilizável.
     Classes Bootstrap:
     - mt-auto: empurra o footer para o final da tela (Sticky Footer)
@@ -25,24 +25,24 @@
     - border-top: linha divisória no topo do rodapé
     - text-center: centraliza o texto
     - text-muted: cor de texto suave (cinza)
--->
+*/-->
 <footer th:fragment="footer" class="mt-auto py-3 border-top text-center text-muted">
-    <!--
+    <!--/*
         Exibe os dados da clínica (PessoaJuridica) se houver uma cadastrada.
         th:if="${clinica != null}" renderiza o bloco somente se existir clínica.
-    -->
+    */-->
     <small th:if="${clinica != null}">
-        <!-- Razão social da clínica em negrito -->
+        <!--/* Razão social da clínica em negrito */-->
         <strong th:text="${clinica.razaoSocial}">Nome da Clínica</strong>
-        <!-- CNPJ da clínica -->
+        <!--/* CNPJ da clínica */-->
         &mdash; CNPJ: <span th:text="${clinica.cnpj}">00.000.000/0000-00</span>
-        <!-- Email de contato da clínica -->
+        <!--/* Email de contato da clínica */-->
         &mdash; Email: <span th:text="${clinica.email}">contato@email.com</span>
-        <!-- Telefone de contato da clínica -->
+        <!--/* Telefone de contato da clínica */-->
         &mdash; Tel: <span th:text="${clinica.telefone}">(00) 0000-0000</span>
     </small>
-    <!-- Texto padrão exibido quando não há clínica cadastrada -->
-    <small th:if="${clinica == null}">&copy; 2025 Sistema Médico. Todos os direitos reservados.</small>
+    <!--/* Texto padrão exibido quando não há clínica cadastrada */-->
+    <small th:if="${clinica == null}">&copy; Sistema Médico. Todos os direitos reservados.</small>
 </footer>
 
 </body>

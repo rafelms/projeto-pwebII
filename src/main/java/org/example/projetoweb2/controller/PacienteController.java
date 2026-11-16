@@ -2,7 +2,9 @@ package org.example.projetoweb2.controller;
 
 import jakarta.validation.Valid;
 import org.example.projetoweb2.dto.FiltroPessoa;
+import org.example.projetoweb2.dto.PessoaFisicaForm;
 import org.example.projetoweb2.model.Paciente;
+import org.example.projetoweb2.model.Papel;
 import org.example.projetoweb2.model.Usuario;
 import org.example.projetoweb2.repository.ConsultaRepository;
 import org.example.projetoweb2.repository.PacienteRepository;
@@ -30,6 +32,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  * - GET    /pacientes/{id}/editar  formulário de edição
  * - PUT    /pacientes/{id}         altera
  * - DELETE /pacientes/{id}         exclui
+ *
+ * O formulário é ligado a um DTO (PessoaFisicaForm), e não à entidade Paciente:
+ * o controller valida o DTO e só depois copia os dados para a entidade.
+ * No model o DTO continua com o nome "paciente", usado pelo template.
  */
 @Controller
 @RequestMapping("/pacientes")
@@ -78,9 +84,7 @@ public class PacienteController {
      */
     @GetMapping("/novo")
     public String novo(Model model) {
-        Paciente paciente = new Paciente();
-        paciente.setUsuario(new Usuario()); // conta vazia para os campos usuário/senha do formulário
-        model.addAttribute("paciente", paciente);
+        model.addAttribute("paciente", new PessoaFisicaForm());
         return "paciente/form";
     }
 
@@ -99,10 +103,10 @@ public class PacienteController {
             redirectAttributes.addFlashAttribute("erro", "Paciente não encontrado: " + id);
             return "redirect:/pacientes";
         }
-        if (paciente.getUsuario() == null) {
-            paciente.setUsuario(new Usuario()); // paciente ainda sem conta: será criada ao salvar
-        }
-        model.addAttribute("paciente", paciente);
+        PessoaFisicaForm form = new PessoaFisicaForm();
+        form.carregar(paciente);
+        model.addAttribute("paciente", form);
+        model.addAttribute("temConta", paciente.getUsuario() != null);
         return "paciente/form";
     }
 
@@ -110,20 +114,26 @@ public class PacienteController {
      * Cadastra um novo paciente (POST).
      */
     @PostMapping
-    public String cadastrar(@Valid @ModelAttribute("paciente") Paciente paciente, BindingResult result,
-                            RedirectAttributes redirectAttributes) {
-        paciente.setId(null);
-        return salvar(paciente, result, redirectAttributes);
+    public String cadastrar(@Valid @ModelAttribute("paciente") PessoaFisicaForm form, BindingResult result,
+                            Model model, RedirectAttributes redirectAttributes) {
+        form.setId(null);
+        return salvar(new Paciente(), form, result, model, redirectAttributes);
     }
 
     /**
-     * Altera um paciente existente (PUT). O id vem da URL, e não do formulário.
+     * Altera um paciente existente (PUT). O id vem da URL, e não do formulário,
+     * e o paciente é sempre buscado no banco: se não existir, volta à listagem com a mensagem de erro.
      */
     @PutMapping("/{id}")
-    public String alterar(@PathVariable Long id, @Valid @ModelAttribute("paciente") Paciente paciente,
-                          BindingResult result, RedirectAttributes redirectAttributes) {
-        paciente.setId(id);
-        return salvar(paciente, result, redirectAttributes);
+    public String alterar(@PathVariable Long id, @Valid @ModelAttribute("paciente") PessoaFisicaForm form,
+                          BindingResult result, Model model, RedirectAttributes redirectAttributes) {
+        Paciente paciente = repository.findById(id).orElse(null);
+        if (paciente == null) {
+            redirectAttributes.addFlashAttribute("erro", "Paciente não encontrado: " + id);
+            return "redirect:/pacientes";
+        }
+        form.setId(id);
+        return salvar(paciente, form, result, model, redirectAttributes);
     }
 
     /**
@@ -150,31 +160,33 @@ public class PacienteController {
     /**
      * Validações comuns ao cadastro e à alteração; se tudo estiver certo, grava o paciente.
      *
-     * - @Valid (nos métodos acima) já aplicou as anotações da entidade e da conta (Usuario);
+     * - @Valid (nos métodos acima) já aplicou as anotações do formulário;
      * - o CPF não pode pertencer a outra pessoa física (paciente ou médico);
      * - o UsuarioService valida o login/senha e monta a conta: um paciente novo recebe
      *   o perfil inicial PACIENTE e a senha codificada em BCrypt.
+     *
+     * A entidade só é alterada depois que todas as validações passam.
+     *
+     * @param paciente entidade nova (cadastro) ou buscada no banco (alteração)
+     * @param form     dados digitados
      */
-    private String salvar(Paciente paciente, BindingResult result, RedirectAttributes redirectAttributes) {
-        if (!result.hasFieldErrors("cpf")) {
-            boolean cpfDuplicado = paciente.getId() == null
-                    ? pessoaFisicaRepository.existsByCpf(paciente.getCpf())
-                    : pessoaFisicaRepository.existsByCpfAndIdNot(paciente.getCpf(), paciente.getId());
-            if (cpfDuplicado) {
-                result.rejectValue("cpf", "cpf.duplicado", "Já existe uma pessoa cadastrada com este CPF.");
-            }
+    private String salvar(Paciente paciente, PessoaFisicaForm form, BindingResult result,
+                          Model model, RedirectAttributes redirectAttributes) {
+        if (!result.hasFieldErrors("cpf") && pessoaFisicaRepository.cpfEmUso(form.getCpf(), paciente.getId())) {
+            result.rejectValue("cpf", "cpf.duplicado", "Já existe uma pessoa cadastrada com este CPF.");
         }
 
         // Conta já gravada no banco (null para paciente novo ou ainda sem conta)
-        Usuario contaAtual = paciente.getId() == null ? null
-                : repository.findById(paciente.getId()).map(Paciente::getUsuario).orElse(null);
-        usuarioService.validar(paciente.getUsuario(), contaAtual, result);
+        Usuario contaAtual = paciente.getUsuario();
+        usuarioService.validar(form.getUsuario(), form.getSenha(), contaAtual, result);
 
         if (result.hasErrors()) {
+            model.addAttribute("temConta", contaAtual != null);
             return "paciente/form";
         }
 
-        paciente.setUsuario(usuarioService.prepararConta(paciente.getUsuario(), contaAtual, "PACIENTE"));
+        form.aplicar(paciente);
+        paciente.setUsuario(usuarioService.prepararConta(form.getUsuario(), form.getSenha(), contaAtual, Papel.PACIENTE));
         repository.save(paciente);
         redirectAttributes.addFlashAttribute("sucesso", "Paciente salvo com sucesso!");
         return "redirect:/pacientes";
