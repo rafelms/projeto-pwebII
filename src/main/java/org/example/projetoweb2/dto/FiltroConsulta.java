@@ -1,8 +1,8 @@
 package org.example.projetoweb2.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Positive;
-import org.example.projetoweb2.validation.PeriodoValido;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.math.BigDecimal;
@@ -14,9 +14,8 @@ import java.time.LocalDate;
  * Não é uma entidade JPA: serve apenas para receber os parâmetros
  * da busca (query string do GET /consultas) e validá-los com @Valid.
  *
- * A anotação @PeriodoValido (customizada) garante que dataFim >= dataInicio.
+ * O método isPeriodoValido (@AssertTrue) garante que dataFim >= dataInicio.
  */
-@PeriodoValido
 public class FiltroConsulta {
 
     /** Data inicial do período (input type="date" envia yyyy-MM-dd). */
@@ -38,6 +37,15 @@ public class FiltroConsulta {
     /** Valor mínimo da consulta (opcional). */
     @DecimalMin(value = "0.00", message = "O valor mínimo não pode ser negativo.")
     private BigDecimal valorMinimo;
+
+    /**
+     * Regra entre dois campos: a data final não pode ser anterior à inicial.
+     * O erro é registrado no campo "periodoValido" (o template o mostra sob a data final).
+     */
+    @AssertTrue(message = "A data final não pode ser anterior à data inicial.")
+    public boolean isPeriodoValido() {
+        return dataInicio == null || dataFim == null || !dataFim.isBefore(dataInicio);
+    }
 
     public LocalDate getDataInicio() {
         return dataInicio;

@@ -42,7 +42,7 @@
     <!--/*
         Filtro de consultas (GET /consultas?dataInicio=...&dataFim=...).
         th:object="${filtro}" liga o formulário ao FiltroConsulta, validado com @Valid
-        no controller (inclui a anotação customizada @PeriodoValido).
+        no controller (inclui a regra @AssertTrue do período, no campo periodoValido).
     */-->
     <div class="card shadow-sm mb-3">
         <div class="card-body">
@@ -54,8 +54,10 @@
                 </div>
                 <div class="col-md-2">
                     <label for="dataFim" class="form-label small">Data final</label>
-                    <input type="date" class="form-control" id="dataFim" th:field="*{dataFim}" th:errorclass="is-invalid">
+                    <input type="date" class="form-control" id="dataFim" th:field="*{dataFim}" th:errorclass="is-invalid"
+                           th:classappend="${#fields.hasErrors('periodoValido')} ? 'is-invalid'">
                     <div class="invalid-feedback" th:errors="*{dataFim}"></div>
+                    <div class="invalid-feedback" th:errors="*{periodoValido}"></div>
                 </div>
                 <div class="col-md-2">
                     <label for="pacienteId" class="form-label small">Paciente</label>
