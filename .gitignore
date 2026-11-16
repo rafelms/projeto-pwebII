@@ -37,3 +37,10 @@ RELATORIO-BEAN-VALIDATION.md
 RELATORIO-SPRING-SECURITY.md
 MUDANCAS-FRAGMENTOS.md
 RELATORIO-USUARIOS-PERFIS-BANCO.md
+RELATORIO-FRAGMENTS-LAYOUT.md
+
+### Testes locais (não versionar) ###
+src/test/java/org/example/projetoweb2/RegrasDoSistemaTests.java
+
+### Auditoria de código (relatório local) ###
+AUDITORIA-CODIGO.md
